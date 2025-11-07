@@ -1,63 +1,99 @@
-import Image from "next/image";
+import Link from "next/link";
 
 export default function Home() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
+      <main className="container mx-auto px-4 py-16 sm:px-6 lg:px-8">
+        <div className="flex flex-col items-center text-center">
+          {/* Hero Section */}
+          <div className="mb-12 max-w-3xl">
+            <div className="mb-6 inline-block rounded-2xl bg-blue-600 px-6 py-3 text-white shadow-lg">
+              <svg className="inline-block h-8 w-8 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+              </svg>
+              <span className="text-xl font-bold">PT Clinic Parking</span>
+            </div>
+
+            <h1 className="mb-6 text-5xl font-bold tracking-tight text-gray-900 dark:text-white sm:text-6xl">
+              Quick & Easy Parking
+            </h1>
+
+            <p className="mb-8 text-xl text-gray-600 dark:text-gray-300">
+              Scan the QR code at your parking spot to check in or pay for visitor parking in seconds.
+            </p>
+
+            {/* CTA Buttons */}
+            <div className="flex flex-col gap-4 sm:flex-row sm:justify-center">
+              <Link
+                href="/checkin"
+                className="rounded-lg bg-blue-600 px-8 py-4 text-lg font-semibold text-white shadow-lg transition-all hover:bg-blue-700 hover:shadow-xl"
+              >
+                Start Parking Session
+              </Link>
+
+              <Link
+                href="/status"
+                className="rounded-lg border-2 border-gray-300 bg-white px-8 py-4 text-lg font-semibold text-gray-700 shadow-md transition-all hover:border-blue-500 hover:shadow-lg dark:bg-gray-800 dark:text-gray-200 dark:border-gray-600"
+              >
+                Check System Status
+              </Link>
+            </div>
+          </div>
+
+          {/* Features Grid */}
+          <div className="mt-16 grid max-w-5xl gap-8 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="rounded-xl bg-white p-6 shadow-md dark:bg-gray-800">
+              <div className="mb-4 inline-block rounded-full bg-green-100 p-3 dark:bg-green-900">
+                <svg className="h-6 w-6 text-green-600 dark:text-green-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <h3 className="mb-2 text-lg font-semibold text-gray-900 dark:text-white">
+                PT Patients
+              </h3>
+              <p className="text-gray-600 dark:text-gray-300">
+                Have an appointment? Check in with your license plate for automatic approval.
+              </p>
+            </div>
+
+            <div className="rounded-xl bg-white p-6 shadow-md dark:bg-gray-800">
+              <div className="mb-4 inline-block rounded-full bg-blue-100 p-3 dark:bg-blue-900">
+                <svg className="h-6 w-6 text-blue-600 dark:text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                </svg>
+              </div>
+              <h3 className="mb-2 text-lg font-semibold text-gray-900 dark:text-white">
+                Visitor Parking
+              </h3>
+              <p className="text-gray-600 dark:text-gray-300">
+                Pay securely with credit card for convenient visitor parking access.
+              </p>
+            </div>
+
+            <div className="rounded-xl bg-white p-6 shadow-md dark:bg-gray-800">
+              <div className="mb-4 inline-block rounded-full bg-purple-100 p-3 dark:bg-purple-900">
+                <svg className="h-6 w-6 text-purple-600 dark:text-purple-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <h3 className="mb-2 text-lg font-semibold text-gray-900 dark:text-white">
+                Real-time Tracking
+              </h3>
+              <p className="text-gray-600 dark:text-gray-300">
+                Your parking session is tracked automatically with clear expiration times.
+              </p>
+            </div>
+          </div>
+
+          {/* Admin Link */}
+          <div className="mt-16">
+            <Link
+              href="/admin/active"
+              className="text-sm text-gray-500 underline hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
             >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+              Admin Portal
+            </Link>
+          </div>
         </div>
       </main>
     </div>
