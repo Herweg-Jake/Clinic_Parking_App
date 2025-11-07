@@ -1,4 +1,3 @@
-// prisma/schema.prisma
 generator client {
   provider = "prisma-client-js"
 }
@@ -8,9 +7,94 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model SystemMeta {
+enum SessionStatus {
+  pending
+  approved_pt
+  paid
+  expired
+  void
+}
+
+enum PermitKind {
+  appointment
+  staff
+  long_term
+}
+
+model Vehicle {
+  id           String    @id @default(cuid())
+  licensePlate String    @unique // normalized: uppercase, no spaces
+  ownerEmail   String?
+  ownerPhone   String?
+  createdAt    DateTime  @default(now())
+  sessions     Session[]
+  permits      Permit[]
+
+  @@index([licensePlate])
+}
+
+model Spot {
+  id       String    @id @default(cuid())
+  label    String    @unique // e.g. A1..A20
+  isActive Boolean   @default(true)
+  sessions Session[]
+}
+
+model Session {
+  id        String        @id @default(cuid())
+  vehicle   Vehicle       @relation(fields: [vehicleId], references: [id])
+  vehicleId String
+  spot      Spot          @relation(fields: [spotId], references: [id])
+  spotId    String
+  startedAt DateTime      @default(now())
+  expiresAt DateTime?
+  status    SessionStatus @default(pending)
+  source    String // "pt_whitelist" | "visitor_payment" | "manual_admin"
+
+  // 1:1 relation to Payment (single FK on Session)
+  payment   Payment? @relation(name: "SessionPayment", fields: [paymentId], references: [id])
+  paymentId String?  @unique
+
+  notes String?
+
+  @@index([status, expiresAt])
+  @@index([vehicleId, startedAt])
+  @@index([spotId, startedAt])
+}
+
+model Payment {
+  id                      String    @id @default(cuid())
+  stripeCheckoutSessionId String    @unique
+  amountCents             Int
+  currency                String    @default("usd")
+  status                  String // "initiated" | "paid" | "failed" | "refunded"
+  paidAt                  DateTime?
+
+  // back-relation (no extra FK here)
+  session Session? @relation(name: "SessionPayment")
+}
+
+model Permit {
+  id        String     @id @default(cuid())
+  vehicle   Vehicle    @relation(fields: [vehicleId], references: [id])
+  vehicleId String
+  kind      PermitKind
+  validFrom DateTime
+  validTo   DateTime
+  meta      Json?
+
+  @@index([vehicleId, validFrom, validTo])
+}
+
+model User {
   id        String   @id @default(cuid())
-  key       String   @unique
-  value     String
+  email     String   @unique
+  role      String // "admin" | "attendant" | "read_only"
   createdAt DateTime @default(now())
+}
+
+model Config {
+  key       String   @id // e.g. "rate_cents", "duration_minutes", "grace_minutes"
+  value     String
+  updatedAt DateTime @default(now())
 }
