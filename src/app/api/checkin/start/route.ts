@@ -125,7 +125,11 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ redirectUrl: checkout.url });
   } catch (err: any) {
-    console.error(err);
-    return NextResponse.json({ error: "Server error" }, { status: 500 });
+    console.error("Checkin error:", err);
+    return NextResponse.json({
+      error: "Server error",
+      message: err.message,
+      details: process.env.NODE_ENV === "development" ? err.stack : undefined
+    }, { status: 500 });
   }
 }
