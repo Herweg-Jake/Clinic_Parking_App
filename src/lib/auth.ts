@@ -2,7 +2,7 @@ import { getRouteSupabase } from "./supabase/server";
 import { prisma } from "./prisma";
 
 export async function requireAdmin() {
-  const supabase = getRouteSupabase();
+  const supabase = await getRouteSupabase();
   const { data: { user }, error } = await supabase.auth.getUser();
   if (error || !user) throw new Error("unauthorized");
 
