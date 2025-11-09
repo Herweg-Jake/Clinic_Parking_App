@@ -15,21 +15,23 @@ export default function LoginPage() {
     setLoading(true);
     try {
       const supabase = getBrowserSupabase();
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
       if (error) {
         setError(error.message);
-      } else {
+        setLoading(false);
+      } else if (data.session) {
         setSuccess(true);
-        // Redirect to admin page after successful login
+        // Give the session a moment to be established
+        await new Promise(resolve => setTimeout(resolve, 500));
+        // Force a full page reload to ensure cookies are set
         window.location.href = "/admin/active";
       }
     } catch (e: any) {
       setError(e.message);
-    } finally {
       setLoading(false);
     }
   }
