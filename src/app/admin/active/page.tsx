@@ -35,6 +35,12 @@ export default function AdminActivePage() {
 
       // Handle non-2xx
       if (!res.ok) {
+        // Redirect to login if unauthorized
+        if (res.status === 401) {
+          window.location.href = "/login";
+          return;
+        }
+
         let msg = `Request failed (${res.status})`;
         try {
           const err = await res.json();
@@ -71,6 +77,10 @@ export default function AdminActivePage() {
     setError(null);
     const res = await fetch(`/api/admin/sessions/${id}/extend`, { method: "POST" });
     if (!res.ok) {
+      if (res.status === 401) {
+        window.location.href = "/login";
+        return;
+      }
       try {
         const err = await res.json();
         setError(err?.error || `Extend failed (${res.status})`);
