@@ -30,13 +30,6 @@ export default function Home() {
               >
                 Start Parking Session
               </Link>
-
-              <Link
-                href="/status"
-                className="rounded-lg border-2 border-gray-300 bg-white px-8 py-4 text-lg font-semibold text-gray-700 shadow-md transition-all hover:border-blue-500 hover:shadow-lg dark:bg-gray-800 dark:text-gray-200 dark:border-gray-600"
-              >
-                Check System Status
-              </Link>
             </div>
           </div>
 

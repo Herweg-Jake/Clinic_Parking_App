@@ -10,6 +10,30 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+
+  /* UNR Blue Color Palette */
+  --color-blue-50: #e6f0ff;
+  --color-blue-100: #cce0ff;
+  --color-blue-200: #99c2ff;
+  --color-blue-300: #66a3ff;
+  --color-blue-400: #3385ff;
+  --color-blue-500: #0066cc;
+  --color-blue-600: #003366;
+  --color-blue-700: #002952;
+  --color-blue-800: #001f3d;
+  --color-blue-900: #001429;
+
+  /* UNR Blue for Indigo shades too */
+  --color-indigo-50: #e6f0ff;
+  --color-indigo-100: #cce0ff;
+  --color-indigo-200: #99c2ff;
+  --color-indigo-300: #66a3ff;
+  --color-indigo-400: #3385ff;
+  --color-indigo-500: #0066cc;
+  --color-indigo-600: #003366;
+  --color-indigo-700: #002952;
+  --color-indigo-800: #001f3d;
+  --color-indigo-900: #001429;
 }
 
 @media (prefers-color-scheme: dark) {
