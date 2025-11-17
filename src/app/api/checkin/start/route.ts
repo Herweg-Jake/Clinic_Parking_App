@@ -14,7 +14,7 @@ export async function POST(req: Request) {
     if (!parsed.success) {
       return NextResponse.json({ error: "Invalid input" }, { status: 400 });
     }
-    const { plate, email, phone, spotLabel, isVisitor } = parsed.data;
+    const { plate, email, phone, spotLabel, parkingType, nevadaPtCode } = parsed.data;
 
     // 1) Basic lookups
     const normalized = normalizePlate(plate);
@@ -57,20 +57,14 @@ export async function POST(req: Request) {
     // 4) Read config (rate + duration)
     const { rateCents, durationMinutes } = await getParkingConfig();
 
-    if (!isVisitor) {
-      // PT path: require an active permit
-      const now = new Date();
-      const permit = await prisma.permit.findFirst({
-        where: {
-          vehicleId: vehicle.id,
-          validFrom: { lte: now },
-          validTo: { gte: now },
-        },
-      });
+    if (parkingType === "nevada_pt") {
+      // Nevada PT path: verify code
+      const correctCode = await prisma.config.findUnique({ where: { key: "nevada_pt_code" } });
+      const validCode = correctCode?.value || "NVPT2025"; // Default code
 
-      if (!permit) {
+      if (!nevadaPtCode || nevadaPtCode.trim().toUpperCase() !== validCode.toUpperCase()) {
         return NextResponse.json(
-          { error: "No active PT permit found. Please see front desk or choose Visitor (Pay)." },
+          { error: "Invalid Nevada PT code. Please check your code and try again." },
           { status: 403 }
         );
       }
@@ -81,13 +75,13 @@ export async function POST(req: Request) {
           vehicleId: vehicle.id,
           spotId: spot.id,
           status: "approved_pt",
-          source: "pt_whitelist",
+          source: "nevada_pt_code",
           expiresAt,
         },
       });
 
       return NextResponse.json({
-        message: `Approved until ${expiresAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`,
+        message: `Welcome! Your parking is approved until ${expiresAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`,
       });
     }
 

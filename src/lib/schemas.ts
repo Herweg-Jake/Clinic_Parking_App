@@ -5,7 +5,8 @@ export const checkinSchema = z.object({
   email: z.string().email().optional().or(z.literal("")).optional(),
   phone: z.string().optional().or(z.literal("")).optional(),
   spotLabel: z.string().min(1),
-  isVisitor: z.boolean(),
+  parkingType: z.enum(["visitor", "nevada_pt"]),
+  nevadaPtCode: z.string().optional(),
 });
 
 export type CheckinInput = z.infer<typeof checkinSchema>;

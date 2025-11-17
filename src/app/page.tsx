@@ -15,11 +15,14 @@ export default function Home() {
             </div>
 
             <h1 className="mb-6 text-5xl font-bold tracking-tight text-gray-900 dark:text-white sm:text-6xl">
-              Quick & Easy Parking
+              Nevada Physical Therapy
             </h1>
+            <h2 className="mb-4 text-3xl font-semibold text-gray-800 dark:text-gray-200">
+              Midtown Location Parking
+            </h2>
 
             <p className="mb-8 text-xl text-gray-600 dark:text-gray-300">
-              Scan the QR code at your parking spot to check in or pay for visitor parking in seconds.
+              Scan the QR code at your parking spot or enter your spot number to get started. Just $2/hour for visitors.
             </p>
 
             {/* CTA Buttons */}
@@ -42,10 +45,10 @@ export default function Home() {
                 </svg>
               </div>
               <h3 className="mb-2 text-lg font-semibold text-gray-900 dark:text-white">
-                PT Patients
+                PT Patients & Staff
               </h3>
               <p className="text-gray-600 dark:text-gray-300">
-                Have an appointment? Check in with your license plate for automatic approval.
+                Use your Nevada PT code for complimentary parking during your visit.
               </p>
             </div>
 
@@ -56,24 +59,24 @@ export default function Home() {
                 </svg>
               </div>
               <h3 className="mb-2 text-lg font-semibold text-gray-900 dark:text-white">
-                Visitor Parking
+                $2 Per Hour
               </h3>
               <p className="text-gray-600 dark:text-gray-300">
-                Pay securely with credit card for convenient visitor parking access.
+                Affordable visitor parking with secure credit card payment processing.
               </p>
             </div>
 
             <div className="rounded-xl bg-white p-6 shadow-md dark:bg-gray-800">
               <div className="mb-4 inline-block rounded-full bg-purple-100 p-3 dark:bg-purple-900">
                 <svg className="h-6 w-6 text-purple-600 dark:text-purple-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
                 </svg>
               </div>
               <h3 className="mb-2 text-lg font-semibold text-gray-900 dark:text-white">
-                Real-time Tracking
+                QR Code Check-In
               </h3>
               <p className="text-gray-600 dark:text-gray-300">
-                Your parking session is tracked automatically with clear expiration times.
+                Scan the QR code at your spot for instant check-in, or enter your spot number manually.
               </p>
             </div>
           </div>
