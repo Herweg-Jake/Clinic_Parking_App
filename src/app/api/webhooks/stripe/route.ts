@@ -31,6 +31,7 @@ export async function POST(req: Request) {
     // 2) create a parking session from metadata
     const plate = String(cs.metadata?.plate || "");
     const spotLabel = String(cs.metadata?.spotLabel || "");
+    const customDurationMinutes = cs.metadata?.durationMinutes ? Number(cs.metadata.durationMinutes) : null;
 
     if (plate && spotLabel) {
       const [spot, vehicle] = await Promise.all([
@@ -39,7 +40,8 @@ export async function POST(req: Request) {
       ]);
 
       if (spot && vehicle) {
-        const { durationMinutes } = await getParkingConfig();
+        // Use custom duration from metadata (based on hours purchased) or fall back to config default
+        const durationMinutes = customDurationMinutes || (await getParkingConfig()).durationMinutes;
         const expiresAt = new Date(Date.now() + durationMinutes * 60 * 1000);
 
         // Ensure previous active sessions for this vehicle are closed

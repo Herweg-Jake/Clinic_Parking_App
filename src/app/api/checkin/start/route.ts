@@ -14,7 +14,7 @@ export async function POST(req: Request) {
     if (!parsed.success) {
       return NextResponse.json({ error: "Invalid input" }, { status: 400 });
     }
-    const { plate, email, phone, spotLabel, parkingType, nevadaPtCode } = parsed.data;
+    const { plate, email, phone, spotLabel, parkingType, nevadaPtCode, hours } = parsed.data;
 
     // 1) Basic lookups
     const normalized = normalizePlate(plate);
@@ -86,6 +86,10 @@ export async function POST(req: Request) {
     }
 
     // 5) Visitor path → Stripe Checkout
+    const visitorHours = hours || 1; // Default to 1 hour if not specified
+    const totalCents = rateCents * visitorHours; // $2/hour * hours
+    const totalMinutes = 60 * visitorHours; // 60 minutes per hour
+
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
 
     const checkout = await stripe.checkout.sessions.create({
@@ -96,8 +100,8 @@ export async function POST(req: Request) {
         {
           price_data: {
             currency: "usd",
-            product_data: { name: `Parking - Spot ${spotLabel}` },
-            unit_amount: rateCents,
+            product_data: { name: `Parking - Spot ${spotLabel} (${visitorHours} ${visitorHours === 1 ? 'hour' : 'hours'})` },
+            unit_amount: totalCents,
           },
           quantity: 1,
         },
@@ -105,6 +109,8 @@ export async function POST(req: Request) {
       metadata: {
         plate: normalized,
         spotLabel,
+        hours: String(visitorHours),
+        durationMinutes: String(totalMinutes),
       },
     });
 
@@ -112,7 +118,7 @@ export async function POST(req: Request) {
     await prisma.payment.create({
       data: {
         stripeCheckoutSessionId: checkout.id,
-        amountCents: rateCents,
+        amountCents: totalCents,
         status: "initiated",
       },
     });

@@ -63,7 +63,7 @@ export default function SuccessPage() {
                   </li>
                   <li className="flex items-center">
                     <span className="mr-2">•</span>
-                    Session duration is typically 2 hours (check with clinic)
+                    Your parking duration is based on the hours you purchased
                   </li>
                 </ul>
               </div>
