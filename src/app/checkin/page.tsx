@@ -218,28 +218,17 @@ export default function CheckinPage() {
                     <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
                       How many hours? <span className="text-red-500">*</span>
                     </label>
-                    <div className="grid grid-cols-4 gap-3">
-                      {[1, 2, 3, 4].map((h) => (
-                        <button
-                          key={h}
-                          type="button"
-                          onClick={() => setHours(h)}
-                          className={`rounded-lg border-2 p-4 text-center transition-all ${
-                            hours === h
-                              ? "border-blue-600 bg-blue-50 dark:bg-blue-900/20 dark:border-blue-500"
-                              : "border-gray-300 bg-white hover:border-blue-300 dark:border-gray-600 dark:bg-gray-700"
-                          }`}
-                        >
-                          <div className="text-2xl font-bold text-gray-900 dark:text-white">{h}</div>
-                          <div className="text-xs text-gray-600 dark:text-gray-400">
-                            {h === 1 ? "hour" : "hours"}
-                          </div>
-                          <div className="mt-1 text-sm font-semibold text-blue-600 dark:text-blue-400">
-                            ${h * 2}
-                          </div>
-                        </button>
+                    <select
+                      value={hours}
+                      onChange={(e) => setHours(Number(e.target.value))}
+                      className="block w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                    >
+                      {Array.from({ length: 12 }, (_, i) => i + 1).map((h) => (
+                        <option key={h} value={h}>
+                          {h} {h === 1 ? 'hour' : 'hours'} - ${h * 2}.00
+                        </option>
                       ))}
-                    </div>
+                    </select>
                     <div className="mt-3 rounded-lg bg-blue-50 p-3 dark:bg-blue-900/20">
                       <p className="text-sm font-semibold text-blue-900 dark:text-blue-300">
                         Total: ${totalPrice}.00
