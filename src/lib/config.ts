@@ -12,8 +12,8 @@ export async function getParkingConfig(): Promise<ParkingConfig> {
   });
   const map = new Map(rows.map(r => [r.key, r.value]));
   return {
-    rateCents: Number(map.get("rate_cents") ?? 500),
-    durationMinutes: Number(map.get("duration_minutes") ?? 120),
+    rateCents: Number(map.get("rate_cents") ?? 200),
+    durationMinutes: Number(map.get("duration_minutes") ?? 60),
     graceMinutes: Number(map.get("grace_minutes") ?? 10),
   };
 }
