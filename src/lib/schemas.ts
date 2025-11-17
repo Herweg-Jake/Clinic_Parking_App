@@ -7,6 +7,7 @@ export const checkinSchema = z.object({
   spotLabel: z.string().min(1),
   parkingType: z.enum(["visitor", "nevada_pt"]),
   nevadaPtCode: z.string().optional(),
+  hours: z.number().min(1).max(10).optional(), // 1-10 hours for visitors
 });
 
 export type CheckinInput = z.infer<typeof checkinSchema>;
