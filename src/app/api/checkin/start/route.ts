@@ -12,7 +12,10 @@ export async function POST(req: Request) {
     const body = await req.json();
     const parsed = checkinSchema.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json({ error: "Invalid input" }, { status: 400 });
+      // Return detailed validation errors
+      const firstError = parsed.error.errors[0];
+      const errorMessage = firstError.message || "Invalid input";
+      return NextResponse.json({ error: errorMessage }, { status: 400 });
     }
     const { plate, email, phone, spotLabel, parkingType, nevadaPtCode, hours } = parsed.data;
 
