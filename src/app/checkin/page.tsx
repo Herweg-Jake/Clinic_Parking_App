@@ -5,7 +5,8 @@ import Link from "next/link";
 
 export default function CheckinPage() {
   const sp = useSearchParams();
-  const spotLabel = sp.get("spot") || "";
+  const initialSpot = sp.get("spot") || "";
+  const [spotLabel, setSpotLabel] = useState(initialSpot);
   const [plate, setPlate] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
@@ -45,10 +46,26 @@ export default function CheckinPage() {
     }
   }
 
-  const canSubmit = plate.trim() && spotLabel && parkingType &&
+  const canSubmit = plate.trim().length >= 2 && spotLabel && parkingType &&
     (parkingType === "visitor" || (parkingType === "nevada_pt" && nevadaPtCode.trim()));
 
   const totalPrice = hours * 2; // $2 per hour
+
+  // Validate license plate format (2-8 alphanumeric characters)
+  const validatePlate = (value: string) => {
+    const cleaned = value.replace(/[^A-Z0-9]/g, '');
+    return cleaned.slice(0, 8); // Max 8 characters
+  };
+
+  // Validate phone number (only digits, dashes, parentheses, spaces)
+  const validatePhone = (value: string) => {
+    return value.replace(/[^0-9\-\(\)\s]/g, '').slice(0, 20);
+  };
+
+  // Validate Nevada PT code (alphanumeric only, max 20 chars)
+  const validateCode = (value: string) => {
+    return value.replace(/[^A-Z0-9]/g, '').slice(0, 20);
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
@@ -157,16 +174,18 @@ export default function CheckinPage() {
                         Spot {spotLabel}
                       </span>
                     </div>
-                    <Link
-                      href="/checkin"
+                    <button
+                      type="button"
+                      onClick={() => setSpotLabel("")}
                       className="text-sm text-blue-600 underline hover:text-blue-700 dark:text-blue-400"
                     >
                       Change
-                    </Link>
+                    </button>
                   </div>
                 ) : (
                   <select
-                    onChange={(e) => window.location.search = `?spot=${e.target.value}`}
+                    value=""
+                    onChange={(e) => setSpotLabel(e.target.value)}
                     className="block w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
                   >
                     <option value="">Select your parking spot</option>
@@ -186,9 +205,18 @@ export default function CheckinPage() {
                   type="text"
                   placeholder="ABC1234"
                   value={plate}
-                  onChange={(e) => setPlate(e.target.value.toUpperCase())}
+                  onChange={(e) => setPlate(validatePlate(e.target.value.toUpperCase()))}
+                  maxLength={8}
                   className="block w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-500"
                 />
+                {plate.length > 0 && plate.length < 2 && (
+                  <p className="mt-1 text-xs text-red-600 dark:text-red-400">
+                    License plate must be at least 2 characters
+                  </p>
+                )}
+                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                  2-8 alphanumeric characters
+                </p>
               </div>
 
               {/* Nevada PT Code Input - Only for PT Patients */}
@@ -201,7 +229,8 @@ export default function CheckinPage() {
                     type="text"
                     placeholder="Enter code"
                     value={nevadaPtCode}
-                    onChange={(e) => setNevadaPtCode(e.target.value.toUpperCase())}
+                    onChange={(e) => setNevadaPtCode(validateCode(e.target.value.toUpperCase()))}
+                    maxLength={20}
                     className="block w-full rounded-lg border border-green-300 bg-white px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-green-500 focus:ring-2 focus:ring-green-500 dark:border-green-600 dark:bg-gray-700 dark:text-white"
                   />
                   <p className="mt-2 text-xs text-gray-600 dark:text-gray-400">
@@ -246,7 +275,8 @@ export default function CheckinPage() {
                         type="email"
                         placeholder="your@email.com"
                         value={email}
-                        onChange={(e) => setEmail(e.target.value)}
+                        onChange={(e) => setEmail(e.target.value.trim())}
+                        maxLength={100}
                         className="block w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-500"
                       />
                     </div>
@@ -257,11 +287,15 @@ export default function CheckinPage() {
                       </label>
                       <input
                         type="tel"
-                        placeholder="555-1234"
+                        placeholder="555-123-4567"
                         value={phone}
-                        onChange={(e) => setPhone(e.target.value)}
+                        onChange={(e) => setPhone(validatePhone(e.target.value))}
+                        maxLength={20}
                         className="block w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-500"
                       />
+                      <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                        e.g., 555-123-4567 or (555) 123-4567
+                      </p>
                     </div>
                   </div>
                 </>
