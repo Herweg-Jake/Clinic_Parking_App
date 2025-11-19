@@ -80,16 +80,6 @@ export default function Home() {
               </p>
             </div>
           </div>
-
-          {/* Admin Link */}
-          <div className="mt-16">
-            <Link
-              href="/admin/active"
-              className="text-sm text-gray-500 underline hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-            >
-              Admin Portal
-            </Link>
-          </div>
         </div>
       </main>
     </div>
