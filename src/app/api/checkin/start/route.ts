@@ -19,37 +19,38 @@ export async function POST(req: Request) {
     }
     const { plate, email, phone, spotLabel, parkingType, nevadaPtCode, hours } = parsed.data;
 
-    // 1) Basic lookups
+    // 1) Normalize plate and parallelize initial lookups
     const normalized = normalizePlate(plate);
-    const spot = await prisma.spot.findUnique({ where: { label: spotLabel } });
+
+    // Parallelize spot lookup and config fetch
+    const [spot, config] = await Promise.all([
+      prisma.spot.findUnique({ where: { label: spotLabel } }),
+      getParkingConfig(),
+    ]);
+
     if (!spot || !spot.isActive) {
       return NextResponse.json({ error: "Invalid or inactive spot" }, { status: 400 });
     }
 
-    const vehicle = await prisma.vehicle.upsert({
-      where: { licensePlate: normalized },
-      update: { ownerEmail: email || null, ownerPhone: phone || null },
-      create: { licensePlate: normalized, ownerEmail: email || null, ownerPhone: phone || null },
-    });
+    const { rateCents, durationMinutes } = config;
 
-    // 2) One active session per vehicle: close prior active sessions for this vehicle
-    await prisma.session.updateMany({
-      where: {
-        vehicleId: vehicle.id,
-        status: { in: ["approved_pt", "paid"] },
-        OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
-      },
-      data: { status: "void", notes: "superseded by new check-in" },
-    });
+    // 2) Parallelize vehicle upsert and active spot check
+    const [vehicle, activeInSpot] = await Promise.all([
+      prisma.vehicle.upsert({
+        where: { licensePlate: normalized },
+        update: { ownerEmail: email || null, ownerPhone: phone || null },
+        create: { licensePlate: normalized, ownerEmail: email || null, ownerPhone: phone || null },
+      }),
+      prisma.session.findFirst({
+        where: {
+          spotId: spot.id,
+          status: { in: ["approved_pt", "paid"] },
+          OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
+        },
+      }),
+    ]);
 
     // 3) Block double-parking: ensure this spot isn't already occupied
-    const activeInSpot = await prisma.session.findFirst({
-      where: {
-        spotId: spot.id,
-        status: { in: ["approved_pt", "paid"] },
-        OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
-      },
-    });
     if (activeInSpot) {
       return NextResponse.json(
         { error: `Spot ${spot.label} is currently occupied. Please choose another spot.` },
@@ -57,8 +58,15 @@ export async function POST(req: Request) {
       );
     }
 
-    // 4) Read config (rate + duration)
-    const { rateCents, durationMinutes } = await getParkingConfig();
+    // 4) Close prior active sessions for this vehicle (non-blocking for visitor payments)
+    const closePriorSessions = prisma.session.updateMany({
+      where: {
+        vehicleId: vehicle.id,
+        status: { in: ["approved_pt", "paid"] },
+        OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
+      },
+      data: { status: "void", notes: "superseded by new check-in" },
+    });
 
     if (parkingType === "nevada_pt") {
       // Nevada PT path: verify code
@@ -73,59 +81,69 @@ export async function POST(req: Request) {
       }
 
       const expiresAt = new Date(Date.now() + durationMinutes * 60 * 1000);
-      await prisma.session.create({
-        data: {
-          vehicleId: vehicle.id,
-          spotId: spot.id,
-          status: "approved_pt",
-          source: "nevada_pt_code",
-          expiresAt,
-        },
-      });
+
+      // Parallelize closing prior sessions and creating new session
+      await Promise.all([
+        closePriorSessions,
+        prisma.session.create({
+          data: {
+            vehicleId: vehicle.id,
+            spotId: spot.id,
+            status: "approved_pt",
+            source: "nevada_pt_code",
+            expiresAt,
+          },
+        }),
+      ]);
 
       return NextResponse.json({
         message: `Welcome! Your parking is approved until ${expiresAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`,
       });
     }
 
-    // 5) Visitor path → Stripe Checkout
+    // 5) Visitor path → Stripe Checkout (optimized)
     const visitorHours = hours || 1; // Default to 1 hour if not specified
     const totalCents = rateCents * visitorHours; // $2/hour * hours
     const totalMinutes = 60 * visitorHours; // 60 minutes per hour
 
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
 
-    const checkout = await stripe.checkout.sessions.create({
-      mode: "payment",
-      success_url: `${baseUrl}/success`,
-      cancel_url: `${baseUrl}/checkin?spot=${encodeURIComponent(spotLabel)}`,
-      line_items: [
-        {
-          price_data: {
-            currency: "usd",
-            product_data: { name: `Parking - Spot ${spotLabel} (${visitorHours} ${visitorHours === 1 ? 'hour' : 'hours'})` },
-            unit_amount: totalCents,
+    // Parallelize Stripe checkout creation and closing prior sessions
+    const [checkout] = await Promise.all([
+      stripe.checkout.sessions.create({
+        mode: "payment",
+        success_url: `${baseUrl}/success`,
+        cancel_url: `${baseUrl}/checkin?spot=${encodeURIComponent(spotLabel)}`,
+        line_items: [
+          {
+            price_data: {
+              currency: "usd",
+              product_data: { name: `Parking - Spot ${spotLabel} (${visitorHours} ${visitorHours === 1 ? 'hour' : 'hours'})` },
+              unit_amount: totalCents,
+            },
+            quantity: 1,
           },
-          quantity: 1,
+        ],
+        metadata: {
+          plate: normalized,
+          spotLabel,
+          hours: String(visitorHours),
+          durationMinutes: String(totalMinutes),
         },
-      ],
-      metadata: {
-        plate: normalized,
-        spotLabel,
-        hours: String(visitorHours),
-        durationMinutes: String(totalMinutes),
-      },
-    });
+      }),
+      closePriorSessions,
+    ]);
 
-    // Track initiation
-    await prisma.payment.create({
+    // Track initiation (non-blocking - fire and forget)
+    prisma.payment.create({
       data: {
         stripeCheckoutSessionId: checkout.id,
         amountCents: totalCents,
         status: "initiated",
       },
-    });
+    }).catch(err => console.error("Failed to track payment initiation:", err));
 
+    // Return immediately with redirect URL
     return NextResponse.json({ redirectUrl: checkout.url });
   } catch (err: any) {
     console.error("Checkin error:", err);

@@ -7,13 +7,6 @@ export default function Home() {
         <div className="flex flex-col items-center text-center">
           {/* Hero Section */}
           <div className="mb-12 max-w-3xl">
-            <div className="mb-6 inline-block rounded-2xl bg-blue-600 px-6 py-3 text-white shadow-lg">
-              <svg className="inline-block h-8 w-8 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
-              </svg>
-              <span className="text-xl font-bold">PT Clinic Parking</span>
-            </div>
-
             <h1 className="mb-6 text-5xl font-bold tracking-tight text-gray-900 dark:text-white sm:text-6xl">
               Nevada Physical Therapy
             </h1>
@@ -66,9 +59,9 @@ export default function Home() {
               </p>
             </div>
 
-            <div className="rounded-xl bg-white p-6 shadow-md dark:bg-gray-800">
-              <div className="mb-4 inline-block rounded-full bg-purple-100 p-3 dark:bg-purple-900">
-                <svg className="h-6 w-6 text-purple-600 dark:text-purple-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="rounded-xl bg-white p-6 shadow-md dark:bg-gray-800 border border-silver-200 dark:border-silver-700">
+              <div className="mb-4 inline-block rounded-full bg-silver-100 p-3 dark:bg-silver-800">
+                <svg className="h-6 w-6 text-silver-600 dark:text-silver-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
                 </svg>
               </div>
