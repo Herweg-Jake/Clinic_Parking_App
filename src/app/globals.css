@@ -34,6 +34,18 @@
   --color-indigo-700: #002952;
   --color-indigo-800: #001f3d;
   --color-indigo-900: #001429;
+
+  /* Silver/Grey Accent Colors */
+  --color-silver-50: #f8f9fa;
+  --color-silver-100: #e9ecef;
+  --color-silver-200: #dee2e6;
+  --color-silver-300: #ced4da;
+  --color-silver-400: #adb5bd;
+  --color-silver-500: #868e96;
+  --color-silver-600: #6c757d;
+  --color-silver-700: #495057;
+  --color-silver-800: #343a40;
+  --color-silver-900: #212529;
 }
 
 @media (prefers-color-scheme: dark) {
