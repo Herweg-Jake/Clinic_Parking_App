@@ -31,6 +31,7 @@ export default function AdminActivePage() {
   const [tab, setTab] = useState<"active" | "expired">("active");
   const [error, setError] = useState<string | null>(null);
   const [autoRefresh, setAutoRefresh] = useState(true);
+  const [showRevenue, setShowRevenue] = useState(false);
 
   const loadRevenue = useCallback(async () => {
     try {
@@ -95,8 +96,10 @@ export default function AdminActivePage() {
 
   useEffect(() => {
     void load();
-    void loadRevenue();
-  }, [tab, load, loadRevenue]);
+    if (showRevenue) {
+      void loadRevenue();
+    }
+  }, [tab, load, loadRevenue, showRevenue]);
 
   // Auto-refresh every 30 seconds
   useEffect(() => {
@@ -104,11 +107,13 @@ export default function AdminActivePage() {
 
     const interval = setInterval(() => {
       void load();
-      void loadRevenue();
+      if (showRevenue) {
+        void loadRevenue();
+      }
     }, 30000);
 
     return () => clearInterval(interval);
-  }, [autoRefresh, load, loadRevenue]);
+  }, [autoRefresh, load, loadRevenue, showRevenue]);
 
   async function extend(id: string) {
     setError(null);
@@ -173,8 +178,29 @@ export default function AdminActivePage() {
           </div>
         </div>
 
+        {/* Revenue Stats Toggle */}
+        <div className="mb-6">
+          <button
+            onClick={() => {
+              setShowRevenue(!showRevenue);
+              if (!showRevenue && !revenue) {
+                loadRevenue();
+              }
+            }}
+            className="flex items-center gap-2 rounded-lg border-2 border-silver-300 bg-white px-4 py-2 font-medium text-gray-700 transition-all hover:border-blue-500 dark:border-silver-600 dark:bg-gray-700 dark:text-gray-200"
+          >
+            <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+            </svg>
+            {showRevenue ? 'Hide Revenue Stats' : 'Show Revenue Stats'}
+            <svg className={`h-4 w-4 transition-transform ${showRevenue ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+        </div>
+
         {/* Revenue Stats */}
-        {revenue && (
+        {showRevenue && revenue && (
           <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <div className="rounded-xl bg-white p-6 shadow-lg dark:bg-gray-800 border-l-4 border-blue-600">
               <div className="flex items-center justify-between">
