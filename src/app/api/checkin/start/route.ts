@@ -34,39 +34,35 @@ export async function POST(req: Request) {
 
     const { rateCents, durationMinutes } = config;
 
-    // 2) Parallelize vehicle upsert and active spot check
-    const [vehicle, activeInSpot] = await Promise.all([
-      prisma.vehicle.upsert({
-        where: { licensePlate: normalized },
-        update: { ownerEmail: email || null, ownerPhone: phone || null },
-        create: { licensePlate: normalized, ownerEmail: email || null, ownerPhone: phone || null },
+    // 2) Vehicle upsert
+    const vehicle = await prisma.vehicle.upsert({
+      where: { licensePlate: normalized },
+      update: { ownerEmail: email || null, ownerPhone: phone || null },
+      create: { licensePlate: normalized, ownerEmail: email || null, ownerPhone: phone || null },
+    });
+
+    // 3) Close prior active sessions for this vehicle AND any sessions in this spot
+    // This allows new users to override previous sessions (e.g., if someone leaves early)
+    const closePriorSessions = Promise.all([
+      // Close any active sessions for this vehicle (they're parking in a new spot)
+      prisma.session.updateMany({
+        where: {
+          vehicleId: vehicle.id,
+          status: { in: ["approved_pt", "paid"] },
+          OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
+        },
+        data: { status: "void", notes: "superseded by new check-in" },
       }),
-      prisma.session.findFirst({
+      // Close any active sessions in this spot (new user is taking over the spot)
+      prisma.session.updateMany({
         where: {
           spotId: spot.id,
           status: { in: ["approved_pt", "paid"] },
           OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
         },
+        data: { status: "void", notes: "spot taken by new vehicle" },
       }),
     ]);
-
-    // 3) Block double-parking: ensure this spot isn't already occupied
-    if (activeInSpot) {
-      return NextResponse.json(
-        { error: `Spot ${spot.label} is currently occupied. Please choose another spot.` },
-        { status: 409 }
-      );
-    }
-
-    // 4) Close prior active sessions for this vehicle (non-blocking for visitor payments)
-    const closePriorSessions = prisma.session.updateMany({
-      where: {
-        vehicleId: vehicle.id,
-        status: { in: ["approved_pt", "paid"] },
-        OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
-      },
-      data: { status: "void", notes: "superseded by new check-in" },
-    });
 
     if (parkingType === "nevada_pt") {
       // Nevada PT path: verify code
@@ -80,7 +76,8 @@ export async function POST(req: Request) {
         );
       }
 
-      const expiresAt = new Date(Date.now() + durationMinutes * 60 * 1000);
+      // Nevada PT users don't have an expiration - they block the spot until another user parks
+      const expiresAt = null;
 
       // Parallelize closing prior sessions and creating new session
       await Promise.all([
@@ -97,13 +94,20 @@ export async function POST(req: Request) {
       ]);
 
       return NextResponse.json({
-        message: `Welcome! Your parking is approved until ${expiresAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`,
+        message: `Welcome! Your parking is approved. Have a great visit!`,
       });
     }
 
     // 5) Visitor path → Stripe Checkout (optimized)
     const visitorHours = hours || 1; // Default to 1 hour if not specified
-    const totalCents = rateCents * visitorHours; // $2/hour * hours
+
+    // Dynamic pricing: $4/hour on Friday-Sunday, $2/hour on Monday-Thursday
+    const now = new Date();
+    const dayOfWeek = now.getDay(); // 0 = Sunday, 5 = Friday, 6 = Saturday
+    const isWeekend = dayOfWeek === 0 || dayOfWeek === 5 || dayOfWeek === 6;
+    const hourlyRate = isWeekend ? 400 : rateCents; // $4 or $2 in cents
+
+    const totalCents = hourlyRate * visitorHours;
     const totalMinutes = 60 * visitorHours; // 60 minutes per hour
 
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";

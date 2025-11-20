@@ -49,7 +49,11 @@ export default function CheckinPage() {
   const canSubmit = plate.trim().length >= 2 && spotLabel && parkingType &&
     (parkingType === "visitor" || (parkingType === "nevada_pt" && nevadaPtCode.trim()));
 
-  const totalPrice = hours * 2; // $2 per hour
+  // Dynamic pricing: $4/hour on Friday-Sunday, $2/hour on Monday-Thursday
+  const dayOfWeek = new Date().getDay(); // 0 = Sunday, 5 = Friday, 6 = Saturday
+  const isWeekend = dayOfWeek === 0 || dayOfWeek === 5 || dayOfWeek === 6;
+  const hourlyRate = isWeekend ? 4 : 2;
+  const totalPrice = hours * hourlyRate;
 
   // Validate license plate format (2-8 alphanumeric characters)
   const validatePlate = (value: string) => {
@@ -121,7 +125,7 @@ export default function CheckinPage() {
                   Pay for Parking
                 </h3>
                 <p className="text-sm text-gray-600 dark:text-gray-400">
-                  $2 per hour
+                  ${hourlyRate} per hour{isWeekend && " (Weekend rate)"}
                 </p>
               </button>
 
@@ -254,13 +258,13 @@ export default function CheckinPage() {
                     >
                       {Array.from({ length: 12 }, (_, i) => i + 1).map((h) => (
                         <option key={h} value={h}>
-                          {h} {h === 1 ? 'hour' : 'hours'} - ${h * 2}.00
+                          {h} {h === 1 ? 'hour' : 'hours'} - ${(h * hourlyRate).toFixed(2)}
                         </option>
                       ))}
                     </select>
                     <div className="mt-3 rounded-lg bg-blue-50 p-3 dark:bg-blue-900/20">
                       <p className="text-sm font-semibold text-blue-900 dark:text-blue-300">
-                        Total: ${totalPrice}.00
+                        Total: ${totalPrice.toFixed(2)}
                       </p>
                     </div>
                   </div>
@@ -316,7 +320,7 @@ export default function CheckinPage() {
                     Processing...
                   </span>
                 ) : parkingType === "visitor" ? (
-                  `Continue to Payment - $${totalPrice}.00`
+                  `Continue to Payment - $${totalPrice.toFixed(2)}`
                 ) : (
                   "Complete Check-In"
                 )}

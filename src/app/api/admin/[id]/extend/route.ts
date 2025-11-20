@@ -8,12 +8,12 @@ import { requireAdmin } from "@/lib/auth";
  */
 export async function POST(
   _req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await requireAdmin();
 
-    const { id } = params;
+    const { id } = await params;
     const session = await prisma.session.findUnique({ where: { id } });
     if (!session) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });

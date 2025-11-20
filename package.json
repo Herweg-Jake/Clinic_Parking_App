@@ -31,6 +31,7 @@
     "react": "19.2.0",
     "react-dom": "19.2.0",
     "stripe": "^19.1.0",
+    "twilio": "^5.10.5",
     "zod": "^4.1.12"
   },
   "devDependencies": {

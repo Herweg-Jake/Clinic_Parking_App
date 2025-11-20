@@ -49,13 +49,14 @@ model Session {
   startedAt DateTime      @default(now())
   expiresAt DateTime?
   status    SessionStatus @default(pending)
-  source    String // "pt_whitelist" | "visitor_payment" | "manual_admin"
+  source    String // "pt_whitelist" | "visitor_payment" | "manual_admin" | "nevada_pt_code"
 
   // 1:1 relation to Payment (single FK on Session)
   payment   Payment? @relation(name: "SessionPayment", fields: [paymentId], references: [id])
   paymentId String?  @unique
 
-  notes String?
+  notes                  String?
+  smsNotificationSentAt  DateTime? // Track when expiration SMS was sent
 
   @@index([status, expiresAt])
   @@index([vehicleId, startedAt])
