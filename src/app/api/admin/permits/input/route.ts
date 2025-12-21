@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { normalizePlate } from "@/lib/plates";
 import { parse } from "csv-parse/sync";
+import { requireAdmin } from "@/lib/auth";
 
 /**
  * POST /api/admin/permits/import
@@ -19,6 +20,7 @@ import { parse } from "csv-parse/sync";
  */
 export async function POST(req: Request) {
   try {
+    await requireAdmin();
     let csvText = "";
 
     // Handle multipart/form-data OR raw text/csv
@@ -125,6 +127,11 @@ export async function POST(req: Request) {
       results,
     });
   } catch (err: any) {
+    const msg = err?.message || "Server error";
+    // Handle auth errors specifically
+    if (msg === "forbidden" || msg === "unauthorized") {
+      return NextResponse.json({ error: msg }, { status: 401 });
+    }
     console.error(err);
     return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
