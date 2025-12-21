@@ -13,8 +13,8 @@ export async function POST(req: Request) {
     const parsed = checkinSchema.safeParse(body);
     if (!parsed.success) {
       // Return detailed validation errors
-      const firstError = parsed.error.errors[0];
-      const errorMessage = firstError.message || "Invalid input";
+      const firstError = parsed.error.issues[0];
+      const errorMessage = firstError?.message || "Invalid input";
       return NextResponse.json({ error: errorMessage }, { status: 400 });
     }
     const { plate, email, phone, spotLabel, parkingType, nevadaPtCode, hours } = parsed.data;
@@ -141,7 +141,7 @@ export async function POST(req: Request) {
         amountCents: totalCents,
         status: "initiated",
       },
-    }).catch(err => console.error("Failed to track payment initiation:", err));
+    }).catch((err: unknown) => console.error("Failed to track payment initiation:", err));
 
     // Return immediately with redirect URL
     return NextResponse.json({ redirectUrl: checkout.url });
