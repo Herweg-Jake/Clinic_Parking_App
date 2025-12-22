@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { SpotAvailability } from "./components/SpotAvailability";
 
 export default function Home() {
   return (
@@ -14,8 +15,11 @@ export default function Home() {
               Midtown Location Parking
             </h2>
 
+            {/* Spot Availability */}
+            <SpotAvailability />
+
             <p className="mb-8 text-xl text-gray-600 dark:text-gray-300">
-              Scan the QR code at your parking spot or enter your spot number to get started. Just $2/hour for visitors.
+              Scan the QR code at your parking spot or enter your spot number to get started.
             </p>
 
             {/* CTA Buttons */}
@@ -25,6 +29,12 @@ export default function Home() {
                 className="rounded-lg bg-blue-600 px-8 py-4 text-lg font-semibold text-white shadow-lg transition-all hover:bg-blue-700 hover:shadow-xl"
               >
                 Start Parking Session
+              </Link>
+              <Link
+                href="/status"
+                className="rounded-lg border-2 border-blue-600 bg-transparent px-8 py-4 text-lg font-semibold text-blue-600 shadow-lg transition-all hover:bg-blue-50 dark:text-blue-400 dark:border-blue-400 dark:hover:bg-gray-800"
+              >
+                Check Status
               </Link>
             </div>
           </div>

@@ -102,3 +102,15 @@ model Config {
   value     String
   updatedAt DateTime @default(now())
 }
+
+model ExtensionToken {
+  id        String   @id @default(cuid())
+  token     String   @unique // Random token for URL
+  sessionId String   // Reference to session (not FK to allow session deletion)
+  expiresAt DateTime // Token expiration (30 min from creation)
+  usedAt    DateTime? // When token was used (null if unused)
+  createdAt DateTime @default(now())
+
+  @@index([token])
+  @@index([sessionId])
+}
