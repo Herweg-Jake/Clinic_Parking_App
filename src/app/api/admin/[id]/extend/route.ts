@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth";
+import { SessionStatus } from "@prisma/client";
 
 /**
  * POST /api/admin/sessions/:id/extend
@@ -18,7 +19,8 @@ export async function POST(
     if (!session) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
-    if (!["approved_pt", "paid"].includes(session.status)) {
+    const activeStatuses: SessionStatus[] = [SessionStatus.approved_pt, SessionStatus.paid];
+    if (!activeStatuses.includes(session.status)) {
       return NextResponse.json({ error: "Only active sessions can be extended" }, { status: 400 });
     }
 

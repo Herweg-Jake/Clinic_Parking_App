@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { normalizePlate } from "@/lib/plates";
 import { getParkingConfig } from "@/lib/config";
 import { checkinSchema } from "@/lib/schemas";
+import { SessionStatus } from "@prisma/client";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || ""); // use account default API version
 
@@ -44,7 +45,7 @@ export async function POST(req: Request) {
       prisma.session.findFirst({
         where: {
           spotId: spot.id,
-          status: { in: ["approved_pt", "paid"] },
+          status: { in: [SessionStatus.approved_pt, SessionStatus.paid] },
           OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
         },
       }),
@@ -62,10 +63,10 @@ export async function POST(req: Request) {
     const closePriorSessions = prisma.session.updateMany({
       where: {
         vehicleId: vehicle.id,
-        status: { in: ["approved_pt", "paid"] },
+        status: { in: [SessionStatus.approved_pt, SessionStatus.paid] },
         OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
       },
-      data: { status: "void", notes: "superseded by new check-in" },
+      data: { status: SessionStatus.void, notes: "superseded by new check-in" },
     });
 
     if (parkingType === "nevada_pt") {
@@ -89,7 +90,7 @@ export async function POST(req: Request) {
           data: {
             vehicleId: vehicle.id,
             spotId: spot.id,
-            status: "approved_pt",
+            status: SessionStatus.approved_pt,
             source: "nevada_pt_code",
             expiresAt,
           },

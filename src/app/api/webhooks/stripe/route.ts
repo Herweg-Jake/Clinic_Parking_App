@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { prisma } from "@/lib/prisma";
 import { getParkingConfig } from "@/lib/config";
+import { SessionStatus } from "@prisma/client";
 
 export const dynamic = "force-dynamic"; // ensure it runs as a serverless fn
 
@@ -46,8 +47,8 @@ export async function POST(req: Request) {
 
         // Ensure previous active sessions for this vehicle are closed
         await prisma.session.updateMany({
-          where: { vehicleId: vehicle.id, status: { in: ["approved_pt", "paid"] } },
-          data: { status: "void", notes: "superseded by paid session" },
+          where: { vehicleId: vehicle.id, status: { in: [SessionStatus.approved_pt, SessionStatus.paid] } },
+          data: { status: SessionStatus.void, notes: "superseded by paid session" },
         });
 
         // Create paid session
@@ -55,7 +56,7 @@ export async function POST(req: Request) {
           data: {
             vehicleId: vehicle.id,
             spotId: spot.id,
-            status: "paid",
+            status: SessionStatus.paid,
             source: "visitor_payment",
             expiresAt,
           },
