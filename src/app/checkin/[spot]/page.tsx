@@ -5,6 +5,7 @@ export default function SpotCheckinPage({
 }: {
   params: { spot: string };
 }) {
-  // Redirect to the main check-in page with the spot pre-filled
-  redirect(`/checkin?spot=${params.spot}`);
+  // Redirect to home page - QR codes no longer pre-fill spot
+  // Users will navigate to check-in from the home page
+  redirect("/");
 }

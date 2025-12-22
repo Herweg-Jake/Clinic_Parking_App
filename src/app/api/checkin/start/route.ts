@@ -3,7 +3,7 @@ import Stripe from "stripe";
 import { prisma } from "@/lib/prisma";
 import { normalizePlate } from "@/lib/plates";
 import { getParkingConfig } from "@/lib/config";
-import { checkinSchema } from "@/lib/schemas";
+import { checkinSchema, formatPhoneE164 } from "@/lib/schemas";
 import { SessionStatus } from "@prisma/client";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || ""); // use account default API version
@@ -33,40 +33,34 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Invalid or inactive spot" }, { status: 400 });
     }
 
-    const { rateCents, durationMinutes } = config;
+    // Use currentRateCents which applies weekend pricing automatically
+    const { currentRateCents, isWeekend } = config;
 
-    // 2) Parallelize vehicle upsert and active spot check
-    const [vehicle, activeInSpot] = await Promise.all([
-      prisma.vehicle.upsert({
-        where: { licensePlate: normalized },
-        update: { ownerEmail: email || null, ownerPhone: phone || null },
-        create: { licensePlate: normalized, ownerEmail: email || null, ownerPhone: phone || null },
-      }),
-      prisma.session.findFirst({
-        where: {
-          spotId: spot.id,
-          status: { in: [SessionStatus.approved_pt, SessionStatus.paid] },
-          OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
-        },
-      }),
-    ]);
+    // 2) Upsert vehicle with contact info
+    const vehicle = await prisma.vehicle.upsert({
+      where: { licensePlate: normalized },
+      update: { ownerEmail: email || null, ownerPhone: phone || null },
+      create: { licensePlate: normalized, ownerEmail: email || null, ownerPhone: phone || null },
+    });
 
-    // 3) Block double-parking: ensure this spot isn't already occupied
-    if (activeInSpot) {
-      return NextResponse.json(
-        { error: `Spot ${spot.label} is currently occupied. Please choose another spot.` },
-        { status: 409 }
-      );
-    }
-
-    // 4) Close prior active sessions for this vehicle (non-blocking for visitor payments)
-    const closePriorSessions = prisma.session.updateMany({
+    // 3) Close prior active sessions for this VEHICLE
+    const closeVehicleSessions = prisma.session.updateMany({
       where: {
         vehicleId: vehicle.id,
         status: { in: [SessionStatus.approved_pt, SessionStatus.paid] },
         OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
       },
       data: { status: SessionStatus.void, notes: "superseded by new check-in" },
+    });
+
+    // 4) Close prior active sessions for this SPOT (spot override - new user takes over)
+    const closeSpotSessions = prisma.session.updateMany({
+      where: {
+        spotId: spot.id,
+        status: { in: [SessionStatus.approved_pt, SessionStatus.paid] },
+        OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
+      },
+      data: { status: SessionStatus.void, notes: "spot taken by new user" },
     });
 
     if (parkingType === "nevada_pt") {
@@ -81,31 +75,35 @@ export async function POST(req: Request) {
         );
       }
 
-      const expiresAt = new Date(Date.now() + durationMinutes * 60 * 1000);
-
-      // Parallelize closing prior sessions and creating new session
+      // PT patients get NO expiration - they stay until spot is taken by new user
+      // Close prior sessions and create new session with no expiry
       await Promise.all([
-        closePriorSessions,
+        closeVehicleSessions,
+        closeSpotSessions,
         prisma.session.create({
           data: {
             vehicleId: vehicle.id,
             spotId: spot.id,
             status: SessionStatus.approved_pt,
             source: "nevada_pt_code",
-            expiresAt,
+            expiresAt: null, // No expiration for PT patients
+            phoneNumber: null, // PT patients don't get SMS notifications
           },
         }),
       ]);
 
       return NextResponse.json({
-        message: `Welcome! Your parking is approved until ${expiresAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`,
+        message: `Welcome! Your parking is approved. No time limit - just check in again if you return later.`,
       });
     }
 
-    // 5) Visitor path → Stripe Checkout (optimized)
+    // 5) Visitor path → Stripe Checkout
     const visitorHours = hours || 1; // Default to 1 hour if not specified
-    const totalCents = rateCents * visitorHours; // $2/hour * hours
+    const totalCents = currentRateCents * visitorHours; // Uses weekend pricing when applicable
     const totalMinutes = 60 * visitorHours; // 60 minutes per hour
+
+    // Format phone for Twilio SMS
+    const formattedPhone = phone ? formatPhoneE164(phone) : null;
 
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
 
@@ -119,7 +117,9 @@ export async function POST(req: Request) {
           {
             price_data: {
               currency: "usd",
-              product_data: { name: `Parking - Spot ${spotLabel} (${visitorHours} ${visitorHours === 1 ? 'hour' : 'hours'})` },
+              product_data: {
+                name: `Parking - Spot ${spotLabel} (${visitorHours} ${visitorHours === 1 ? 'hour' : 'hours'})${isWeekend ? ' - Weekend Rate' : ''}`,
+              },
               unit_amount: totalCents,
             },
             quantity: 1,
@@ -130,9 +130,12 @@ export async function POST(req: Request) {
           spotLabel,
           hours: String(visitorHours),
           durationMinutes: String(totalMinutes),
+          phone: formattedPhone || "", // Pass phone for session creation in webhook
+          email: email || "",
         },
       }),
-      closePriorSessions,
+      closeVehicleSessions,
+      closeSpotSessions,
     ]);
 
     // Track initiation (non-blocking - fire and forget)

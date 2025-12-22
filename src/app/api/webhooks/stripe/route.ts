@@ -33,6 +33,7 @@ export async function POST(req: Request) {
     const plate = String(cs.metadata?.plate || "");
     const spotLabel = String(cs.metadata?.spotLabel || "");
     const customDurationMinutes = cs.metadata?.durationMinutes ? Number(cs.metadata.durationMinutes) : null;
+    const phone = cs.metadata?.phone || null; // Phone for SMS notifications
 
     if (plate && spotLabel) {
       const [spot, vehicle] = await Promise.all([
@@ -45,13 +46,27 @@ export async function POST(req: Request) {
         const durationMinutes = customDurationMinutes || (await getParkingConfig()).durationMinutes;
         const expiresAt = new Date(Date.now() + durationMinutes * 60 * 1000);
 
-        // Ensure previous active sessions for this vehicle are closed
+        // Close previous active sessions for this VEHICLE
         await prisma.session.updateMany({
-          where: { vehicleId: vehicle.id, status: { in: [SessionStatus.approved_pt, SessionStatus.paid] } },
+          where: {
+            vehicleId: vehicle.id,
+            status: { in: [SessionStatus.approved_pt, SessionStatus.paid] },
+            OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
+          },
           data: { status: SessionStatus.void, notes: "superseded by paid session" },
         });
 
-        // Create paid session
+        // Close previous active sessions for this SPOT (spot override - new user takes over)
+        await prisma.session.updateMany({
+          where: {
+            spotId: spot.id,
+            status: { in: [SessionStatus.approved_pt, SessionStatus.paid] },
+            OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
+          },
+          data: { status: SessionStatus.void, notes: "spot taken by new user" },
+        });
+
+        // Create paid session with phone number for SMS notifications
         await prisma.session.create({
           data: {
             vehicleId: vehicle.id,
@@ -59,6 +74,7 @@ export async function POST(req: Request) {
             status: SessionStatus.paid,
             source: "visitor_payment",
             expiresAt,
+            phoneNumber: phone, // Store phone for SMS reminders
           },
         });
       }
