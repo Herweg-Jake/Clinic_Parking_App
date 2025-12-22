@@ -1,14 +1,11 @@
 "use client";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 
-export default function SuccessPage() {
-  const [showConfetti, setShowConfetti] = useState(true);
-
-  useEffect(() => {
-    const timer = setTimeout(() => setShowConfetti(false), 3000);
-    return () => clearTimeout(timer);
-  }, []);
+function SuccessContent() {
+  const searchParams = useSearchParams();
+  const isExtension = searchParams.get("extended") === "true";
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-100 dark:from-gray-900 dark:to-gray-800">
@@ -34,37 +31,74 @@ export default function SuccessPage() {
             </div>
 
             <h1 className="mb-2 text-4xl font-bold text-gray-900 dark:text-white">
-              Payment Confirmed!
+              {isExtension ? "Time Extended!" : "Payment Confirmed!"}
             </h1>
 
             <p className="text-lg text-gray-600 dark:text-gray-300">
-              Your parking session is now active
+              {isExtension
+                ? "Your parking time has been extended"
+                : "Your parking session is now active"}
             </p>
           </div>
 
+          {/* SMS Notifications Info */}
+          <div className="my-6 rounded-lg bg-green-50 p-4 dark:bg-green-900/20">
+            <div className="flex items-start">
+              <svg className="mr-3 mt-0.5 h-6 w-6 flex-shrink-0 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+              </svg>
+              <div>
+                <h3 className="font-semibold text-green-800 dark:text-green-300">
+                  SMS Notifications Active
+                </h3>
+                <ul className="mt-2 space-y-1 text-sm text-green-700 dark:text-green-400">
+                  <li>You'll receive a confirmation text shortly</li>
+                  <li>We'll text you 10 minutes before expiration</li>
+                  <li>Reply <strong>STATUS</strong> to check your time</li>
+                  <li>Reply <strong>EXTEND</strong> to add more time</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
           {/* Info Section */}
-          <div className="my-8 space-y-4 rounded-lg bg-blue-50 p-6 dark:bg-blue-900/20">
+          <div className="my-6 space-y-4 rounded-lg bg-blue-50 p-6 dark:bg-blue-900/20">
             <div className="flex items-start">
               <svg className="mr-3 mt-0.5 h-6 w-6 flex-shrink-0 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
               <div>
                 <h3 className="font-semibold text-gray-900 dark:text-white">
-                  What's next?
+                  {isExtension ? "Extension Complete" : "What's next?"}
                 </h3>
                 <ul className="mt-2 space-y-2 text-sm text-gray-700 dark:text-gray-300">
-                  <li className="flex items-center">
-                    <span className="mr-2">•</span>
-                    Your parking session will be processed shortly
-                  </li>
-                  <li className="flex items-center">
-                    <span className="mr-2">•</span>
-                    You'll receive a confirmation email if you provided one
-                  </li>
-                  <li className="flex items-center">
-                    <span className="mr-2">•</span>
-                    Your parking duration is based on the hours you purchased
-                  </li>
+                  {isExtension ? (
+                    <>
+                      <li className="flex items-center">
+                        <span className="mr-2">•</span>
+                        Your new expiration time is active now
+                      </li>
+                      <li className="flex items-center">
+                        <span className="mr-2">•</span>
+                        Check your status anytime using the link below
+                      </li>
+                    </>
+                  ) : (
+                    <>
+                      <li className="flex items-center">
+                        <span className="mr-2">•</span>
+                        Your parking session is now active
+                      </li>
+                      <li className="flex items-center">
+                        <span className="mr-2">•</span>
+                        Park in the spot you selected during check-in
+                      </li>
+                      <li className="flex items-center">
+                        <span className="mr-2">•</span>
+                        Your parking duration is based on the hours you purchased
+                      </li>
+                    </>
+                  )}
                 </ul>
               </div>
             </div>
@@ -90,17 +124,17 @@ export default function SuccessPage() {
           {/* Action Buttons */}
           <div className="mt-8 flex flex-col gap-4 sm:flex-row">
             <Link
-              href="/"
-              className="flex-1 rounded-lg bg-blue-600 px-6 py-3 text-center font-semibold text-white shadow-md transition-all hover:bg-blue-700 hover:shadow-lg"
+              href="/status"
+              className="flex-1 rounded-lg bg-green-600 px-6 py-3 text-center font-semibold text-white shadow-md transition-all hover:bg-green-700 hover:shadow-lg"
             >
-              Return to Home
+              Check Status
             </Link>
 
             <Link
-              href="/checkin"
+              href="/"
               className="flex-1 rounded-lg border-2 border-gray-300 bg-white px-6 py-3 text-center font-semibold text-gray-700 shadow-md transition-all hover:border-blue-500 hover:shadow-lg dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200"
             >
-              New Session
+              Return to Home
             </Link>
           </div>
         </div>
@@ -111,10 +145,32 @@ export default function SuccessPage() {
             Questions about your parking session?
           </p>
           <p className="mt-1 text-sm font-medium text-gray-700 dark:text-gray-300">
-            Contact the clinic front desk: (555) 123-4567
+            Contact the clinic front desk
           </p>
         </div>
       </main>
     </div>
+  );
+}
+
+function SuccessLoading() {
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-100 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center">
+      <div className="text-center">
+        <svg className="mx-auto h-12 w-12 animate-spin text-green-600" fill="none" viewBox="0 0 24 24">
+          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+        <p className="mt-4 text-gray-600 dark:text-gray-400">Loading...</p>
+      </div>
+    </div>
+  );
+}
+
+export default function SuccessPage() {
+  return (
+    <Suspense fallback={<SuccessLoading />}>
+      <SuccessContent />
+    </Suspense>
   );
 }
