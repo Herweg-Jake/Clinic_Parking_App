@@ -1,10 +1,14 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { SessionStatus } from "@prisma/client";
+import { triggerNotificationCheck } from "@/lib/notifications";
 
 export const dynamic = "force-dynamic";
 
 export async function GET() {
+  // Trigger notification check in background (on-demand for Hobby plan)
+  triggerNotificationCheck();
+
   try {
     // Get total active spots
     const totalSpots = await prisma.spot.count({

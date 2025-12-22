@@ -2,10 +2,14 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { SessionStatus } from "@prisma/client";
 import { formatPhoneE164 } from "@/lib/schemas";
+import { triggerNotificationCheck } from "@/lib/notifications";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(request: Request) {
+  // Trigger notification check in background (on-demand notifications for Hobby plan)
+  triggerNotificationCheck();
+
   const { searchParams } = new URL(request.url);
   const sessionId = searchParams.get("session");
   const plate = searchParams.get("plate");
