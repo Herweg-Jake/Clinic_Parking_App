@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth";
+import { SessionStatus } from "@prisma/client";
 
 export const dynamic = "force-dynamic";
 
@@ -18,14 +19,15 @@ export async function GET(req: Request) {
     const spotLabel = searchParams.get("spot") || "";
 
     const now = new Date();
+    const activeStatuses: SessionStatus[] = [SessionStatus.approved_pt, SessionStatus.paid];
     const whereBase =
       statusParam === "expired"
         ? {
-            status: { in: ["approved_pt", "paid"] },
+            status: { in: activeStatuses },
             expiresAt: { lt: now },
           }
         : {
-            status: { in: ["approved_pt", "paid"] },
+            status: { in: activeStatuses },
             OR: [{ expiresAt: null }, { expiresAt: { gt: now } }],
           };
 
