@@ -5,13 +5,13 @@ const prisma = new PrismaClient();
 async function updatePricing() {
   console.log("Updating parking pricing configuration...");
 
-  // Update rate_cents to $2/hour (200 cents)
+  // Update rate_cents to $3/hour (300 cents)
   await prisma.config.upsert({
     where: { key: "rate_cents" },
-    update: { value: "200", updatedAt: new Date() },
-    create: { key: "rate_cents", value: "200" },
+    update: { value: "300", updatedAt: new Date() },
+    create: { key: "rate_cents", value: "300" },
   });
-  console.log("✓ Updated rate_cents to 200 ($2.00)");
+  console.log("✓ Updated rate_cents to 300 ($3.00)");
 
   // Update duration_minutes to 60 (1 hour)
   await prisma.config.upsert({

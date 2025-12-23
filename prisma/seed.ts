@@ -14,7 +14,7 @@ async function main() {
 
   // Default config (you can edit later via SQL/Admin UI)
   const defaults: Record<string, string | number> = {
-    rate_cents: 200,          // $2/hour
+    rate_cents: 300,          // $3/hour
     duration_minutes: 60,     // 1 hour
     grace_minutes: 10,        // 10-minute grace period
     nevada_pt_code: "NVPT2025", // Code for Nevada PT patients & staff

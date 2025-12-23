@@ -22,7 +22,7 @@ export async function getParkingConfig(): Promise<ParkingConfig> {
   });
   const map = new Map(rows.map((r: { key: string; value: string }) => [r.key, r.value]));
 
-  const rateCents = Number(map.get("rate_cents") ?? 200); // $2.00 weekday default
+  const rateCents = Number(map.get("rate_cents") ?? 300); // $3.00 weekday default
   const rateCentsWeekend = Number(map.get("rate_cents_weekend") ?? 500); // $5.00 weekend default
   const isWeekend = isWeekendDay();
 
