@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { SpotAvailability } from "./components/SpotAvailability";
+import { Logo } from "./components/Logo";
 
 export default function Home() {
   return (
@@ -8,16 +9,7 @@ export default function Home() {
         <div className="flex flex-col items-center text-center">
           {/* Logo/Branding */}
           <div className="mb-6">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="/logo.png"
-              alt="Nevada Physical Therapy"
-              className="h-auto w-auto max-w-[280px] sm:max-w-[350px]"
-              onError={(e) => {
-                // Hide image if it fails to load
-                e.currentTarget.style.display = 'none';
-              }}
-            />
+            <Logo />
           </div>
 
           {/* Hero Section */}
