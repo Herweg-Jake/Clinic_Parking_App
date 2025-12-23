@@ -3,6 +3,16 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  color-scheme: light only;
+}
+
+/* Force light mode - disable dark: Tailwind variants */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #ffffff;
+    --foreground: #171717;
+    color-scheme: light only;
+  }
 }
 
 @theme inline {
@@ -48,12 +58,7 @@
   --color-silver-900: #212529;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
+/* Force light mode - ignore system dark mode preference */
 
 body {
   background: var(--background);
