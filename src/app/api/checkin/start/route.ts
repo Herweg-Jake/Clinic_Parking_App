@@ -77,7 +77,7 @@ export async function POST(req: Request) {
 
       // PT patients get NO expiration - they stay until spot is taken by new user
       // Close prior sessions and create new session with no expiry
-      await Promise.all([
+      const [, , newSession] = await Promise.all([
         closeVehicleSessions,
         closeSpotSessions,
         prisma.session.create({
@@ -91,6 +91,15 @@ export async function POST(req: Request) {
           },
         }),
       ]);
+
+      console.log("[PT Check-in] Session created:", {
+        sessionId: newSession.id,
+        vehicleId: vehicle.id,
+        spotId: spot.id,
+        spotLabel,
+        plate: normalized,
+        status: newSession.status,
+      });
 
       return NextResponse.json({
         message: `Welcome! Your parking is approved. No time limit - just check in again if you return later.`,

@@ -40,17 +40,17 @@ export function SpotAvailability() {
   const availabilityPercent = (data.available / data.total) * 100;
   const statusColor =
     availabilityPercent > 50
-      ? "text-green-600 dark:text-green-400"
+      ? "text-green-600"
       : availabilityPercent > 20
-      ? "text-yellow-600 dark:text-yellow-400"
-      : "text-red-600 dark:text-red-400";
+      ? "text-yellow-600"
+      : "text-red-600";
 
   const bgColor =
     availabilityPercent > 50
-      ? "bg-green-100 dark:bg-green-900/30"
+      ? "bg-green-100"
       : availabilityPercent > 20
-      ? "bg-yellow-100 dark:bg-yellow-900/30"
-      : "bg-red-100 dark:bg-red-900/30";
+      ? "bg-yellow-100"
+      : "bg-red-100";
 
   return (
     <div className={`mb-6 inline-flex items-center rounded-full ${bgColor} px-6 py-3`}>
