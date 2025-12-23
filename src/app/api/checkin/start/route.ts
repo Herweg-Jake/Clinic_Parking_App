@@ -138,16 +138,21 @@ export async function POST(req: Request) {
       closeSpotSessions,
     ]);
 
-    // Track initiation (non-blocking - fire and forget)
-    prisma.payment.create({
-      data: {
-        stripeCheckoutSessionId: checkout.id,
-        amountCents: totalCents,
-        status: "initiated",
-      },
-    }).catch((err: unknown) => console.error("Failed to track payment initiation:", err));
+    // Track payment initiation - MUST await to ensure record exists before webhook
+    try {
+      await prisma.payment.create({
+        data: {
+          stripeCheckoutSessionId: checkout.id,
+          amountCents: totalCents,
+          status: "initiated",
+        },
+      });
+    } catch (err: unknown) {
+      console.error("Failed to track payment initiation:", err);
+      // Continue anyway - webhook will still work with metadata
+    }
 
-    // Return immediately with redirect URL
+    // Return redirect URL
     return NextResponse.json({ redirectUrl: checkout.url });
   } catch (err: any) {
     console.error("Checkin error:", err);

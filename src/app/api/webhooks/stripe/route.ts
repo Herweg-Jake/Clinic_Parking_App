@@ -85,56 +85,92 @@ export async function POST(req: Request) {
       const customDurationMinutes = cs.metadata?.durationMinutes ? Number(cs.metadata.durationMinutes) : null;
       const phone = cs.metadata?.phone || null;
 
-      if (plate && spotLabel) {
-        const [spot, vehicle] = await Promise.all([
-          prisma.spot.findUnique({ where: { label: spotLabel } }),
-          prisma.vehicle.findUnique({ where: { licensePlate: plate } }),
-        ]);
+      console.log("[Stripe Webhook] Processing new parking payment:", {
+        checkoutSessionId: cs.id,
+        plate,
+        spotLabel,
+        durationMinutes: customDurationMinutes,
+        phone: phone ? "provided" : "none"
+      });
 
-        if (spot && vehicle) {
-          const durationMinutes = customDurationMinutes || (await getParkingConfig()).durationMinutes;
-          const expiresAt = new Date(Date.now() + durationMinutes * 60 * 1000);
+      if (!plate || !spotLabel) {
+        console.error("[Stripe Webhook] Missing metadata:", { plate, spotLabel });
+        return NextResponse.json({ received: true, error: "Missing metadata" });
+      }
 
-          // Close previous active sessions for this VEHICLE
-          await prisma.session.updateMany({
-            where: {
-              vehicleId: vehicle.id,
-              status: { in: [SessionStatus.approved_pt, SessionStatus.paid] },
-              OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
-            },
-            data: { status: SessionStatus.void, notes: "superseded by paid session" },
-          });
+      // Look up spot and vehicle - create vehicle if it doesn't exist
+      const [spot, existingVehicle] = await Promise.all([
+        prisma.spot.findUnique({ where: { label: spotLabel } }),
+        prisma.vehicle.findUnique({ where: { licensePlate: plate } }),
+      ]);
 
-          // Close previous active sessions for this SPOT
-          await prisma.session.updateMany({
-            where: {
-              spotId: spot.id,
-              status: { in: [SessionStatus.approved_pt, SessionStatus.paid] },
-              OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
-            },
-            data: { status: SessionStatus.void, notes: "spot taken by new user" },
-          });
+      if (!spot) {
+        console.error("[Stripe Webhook] Spot not found:", spotLabel);
+        return NextResponse.json({ received: true, error: "Spot not found" });
+      }
 
-          // Create paid session
-          const newSession = await prisma.session.create({
-            data: {
-              vehicleId: vehicle.id,
-              spotId: spot.id,
-              status: SessionStatus.paid,
-              source: "visitor_payment",
-              expiresAt,
-              phoneNumber: phone,
-            },
-          });
+      // Create vehicle if it doesn't exist (fallback for race condition)
+      const vehicle = existingVehicle || await prisma.vehicle.create({
+        data: {
+          licensePlate: plate,
+          ownerEmail: cs.metadata?.email || null,
+          ownerPhone: phone,
+        },
+      });
 
-          // Send confirmation SMS
-          if (phone && isTwilioConfigured()) {
-            const statusUrl = buildStatusUrl(newSession.id);
-            sendParkingConfirmation(phone, spotLabel, expiresAt, statusUrl).catch(
-              (err) => console.error("Failed to send parking confirmation:", err)
-            );
-          }
-        }
+      console.log("[Stripe Webhook] Found/created records:", {
+        spotId: spot.id,
+        vehicleId: vehicle.id
+      });
+
+      const durationMinutes = customDurationMinutes || (await getParkingConfig()).durationMinutes;
+      const expiresAt = new Date(Date.now() + durationMinutes * 60 * 1000);
+
+      // Close previous active sessions for this VEHICLE
+      await prisma.session.updateMany({
+        where: {
+          vehicleId: vehicle.id,
+          status: { in: [SessionStatus.approved_pt, SessionStatus.paid] },
+          OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
+        },
+        data: { status: SessionStatus.void, notes: "superseded by paid session" },
+      });
+
+      // Close previous active sessions for this SPOT
+      await prisma.session.updateMany({
+        where: {
+          spotId: spot.id,
+          status: { in: [SessionStatus.approved_pt, SessionStatus.paid] },
+          OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
+        },
+        data: { status: SessionStatus.void, notes: "spot taken by new user" },
+      });
+
+      // Create paid session
+      const newSession = await prisma.session.create({
+        data: {
+          vehicleId: vehicle.id,
+          spotId: spot.id,
+          status: SessionStatus.paid,
+          source: "visitor_payment",
+          expiresAt,
+          phoneNumber: phone,
+        },
+      });
+
+      console.log("[Stripe Webhook] Session created successfully:", {
+        sessionId: newSession.id,
+        plate,
+        spotLabel,
+        expiresAt: expiresAt.toISOString()
+      });
+
+      // Send confirmation SMS
+      if (phone && isTwilioConfigured()) {
+        const statusUrl = buildStatusUrl(newSession.id);
+        sendParkingConfirmation(phone, spotLabel, expiresAt, statusUrl).catch(
+          (err) => console.error("Failed to send parking confirmation:", err)
+        );
       }
     }
   }
