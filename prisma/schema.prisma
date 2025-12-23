@@ -49,13 +49,17 @@ model Session {
   startedAt DateTime      @default(now())
   expiresAt DateTime?
   status    SessionStatus @default(pending)
-  source    String // "pt_whitelist" | "visitor_payment" | "manual_admin"
+  source    String // "pt_whitelist" | "visitor_payment" | "nevada_pt_code" | "manual_admin"
 
   // 1:1 relation to Payment (single FK on Session)
   payment   Payment? @relation(name: "SessionPayment", fields: [paymentId], references: [id])
   paymentId String?  @unique
 
   notes String?
+
+  // Notification tracking for SMS reminders
+  phoneNumber        String?   // Denormalized for quick notification access
+  notificationSentAt DateTime? // When expiration warning was sent
 
   @@index([status, expiresAt])
   @@index([vehicleId, startedAt])
@@ -97,4 +101,16 @@ model Config {
   key       String   @id // e.g. "rate_cents", "duration_minutes", "grace_minutes"
   value     String
   updatedAt DateTime @default(now())
+}
+
+model ExtensionToken {
+  id        String   @id @default(cuid())
+  token     String   @unique // Random token for URL
+  sessionId String   // Reference to session (not FK to allow session deletion)
+  expiresAt DateTime // Token expiration (30 min from creation)
+  usedAt    DateTime? // When token was used (null if unused)
+  createdAt DateTime @default(now())
+
+  @@index([token])
+  @@index([sessionId])
 }

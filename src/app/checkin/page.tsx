@@ -1,7 +1,15 @@
 "use client";
 import { useSearchParams } from "next/navigation";
-import { useState, Suspense } from "react";
+import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
+
+type PricingInfo = {
+  rateCents: number;
+  rateDisplay: string;
+  isWeekend: boolean;
+  weekdayRate: number;
+  weekendRate: number;
+};
 
 function CheckinForm() {
   const sp = useSearchParams();
@@ -15,6 +23,15 @@ function CheckinForm() {
   const [hours, setHours] = useState(1);
   const [msg, setMsg] = useState("");
   const [loading, setLoading] = useState(false);
+  const [pricing, setPricing] = useState<PricingInfo | null>(null);
+
+  // Fetch current pricing on mount
+  useEffect(() => {
+    fetch("/api/pricing")
+      .then((res) => res.json())
+      .then((data) => setPricing(data))
+      .catch(() => setPricing({ rateCents: 200, rateDisplay: "2", isWeekend: false, weekdayRate: 200, weekendRate: 500 }));
+  }, []);
 
   async function submit() {
     setMsg("");
@@ -46,10 +63,18 @@ function CheckinForm() {
     }
   }
 
-  const canSubmit = plate.trim().length >= 2 && spotLabel && parkingType &&
-    (parkingType === "visitor" || (parkingType === "nevada_pt" && nevadaPtCode.trim()));
+  // Extract digits from phone for validation
+  const phoneDigits = phone.replace(/\D/g, "");
+  const isPhoneValid = phoneDigits.length >= 10;
 
-  const totalPrice = hours * 2; // $2 per hour
+  const canSubmit = plate.trim().length >= 2 && spotLabel && parkingType &&
+    (parkingType === "visitor"
+      ? isPhoneValid // Phone required for visitors
+      : (parkingType === "nevada_pt" && nevadaPtCode.trim()));
+
+  // Dynamic pricing based on weekend/weekday
+  const hourlyRate = pricing ? pricing.rateCents / 100 : 2;
+  const totalPrice = hours * hourlyRate;
 
   // Validate license plate format (2-8 alphanumeric characters)
   const validatePlate = (value: string) => {
@@ -121,7 +146,12 @@ function CheckinForm() {
                   Pay for Parking
                 </h3>
                 <p className="text-sm text-gray-600 dark:text-gray-400">
-                  $2 per hour
+                  ${pricing ? hourlyRate : 2} per hour
+                  {pricing?.isWeekend && (
+                    <span className="ml-2 inline-block rounded bg-orange-100 px-2 py-0.5 text-xs font-medium text-orange-800 dark:bg-orange-900/30 dark:text-orange-400">
+                      Weekend Rate
+                    </span>
+                  )}
                 </p>
               </button>
 
@@ -242,6 +272,51 @@ function CheckinForm() {
               {/* Visitor-Only Fields */}
               {parkingType === "visitor" && (
                 <>
+                  {/* Phone - Required for SMS notifications */}
+                  <div className="mb-6">
+                    <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                      Phone Number <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="tel"
+                      placeholder="(555) 123-4567"
+                      value={phone}
+                      onChange={(e) => setPhone(validatePhone(e.target.value))}
+                      maxLength={20}
+                      className={`block w-full rounded-lg border bg-white px-4 py-3 text-gray-900 placeholder-gray-400 focus:ring-2 dark:bg-gray-700 dark:text-white dark:placeholder-gray-500 ${
+                        phone && !isPhoneValid
+                          ? "border-red-500 focus:border-red-500 focus:ring-red-500"
+                          : "border-gray-300 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600"
+                      }`}
+                    />
+                    {phone && !isPhoneValid && (
+                      <p className="mt-1 text-xs text-red-600 dark:text-red-400">
+                        Please enter a valid 10-digit phone number
+                      </p>
+                    )}
+                    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                      Required for parking status updates and expiration reminders
+                    </p>
+                  </div>
+
+                  {/* Email - Optional */}
+                  <div className="mb-6">
+                    <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                      Email (Optional)
+                    </label>
+                    <input
+                      type="email"
+                      placeholder="your@email.com"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value.trim())}
+                      maxLength={100}
+                      className="block w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-500"
+                    />
+                    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                      For receipt and confirmation
+                    </p>
+                  </div>
+
                   {/* Hours Selection */}
                   <div className="mb-6">
                     <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -254,47 +329,18 @@ function CheckinForm() {
                     >
                       {Array.from({ length: 12 }, (_, i) => i + 1).map((h) => (
                         <option key={h} value={h}>
-                          {h} {h === 1 ? 'hour' : 'hours'} - ${h * 2}.00
+                          {h} {h === 1 ? 'hour' : 'hours'} - ${(h * hourlyRate).toFixed(2)}
                         </option>
                       ))}
                     </select>
                     <div className="mt-3 rounded-lg bg-blue-50 p-3 dark:bg-blue-900/20">
                       <p className="text-sm font-semibold text-blue-900 dark:text-blue-300">
-                        Total: ${totalPrice}.00
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Contact Info */}
-                  <div className="mb-6 space-y-4">
-                    <div>
-                      <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                        Email (Optional)
-                      </label>
-                      <input
-                        type="email"
-                        placeholder="your@email.com"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value.trim())}
-                        maxLength={100}
-                        className="block w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-500"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                        Phone (Optional)
-                      </label>
-                      <input
-                        type="tel"
-                        placeholder="555-123-4567"
-                        value={phone}
-                        onChange={(e) => setPhone(validatePhone(e.target.value))}
-                        maxLength={20}
-                        className="block w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-500"
-                      />
-                      <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                        e.g., 555-123-4567 or (555) 123-4567
+                        Total: ${totalPrice.toFixed(2)}
+                        {pricing?.isWeekend && (
+                          <span className="ml-2 text-xs font-normal text-orange-600 dark:text-orange-400">
+                            (Weekend pricing)
+                          </span>
+                        )}
                       </p>
                     </div>
                   </div>
@@ -316,7 +362,7 @@ function CheckinForm() {
                     Processing...
                   </span>
                 ) : parkingType === "visitor" ? (
-                  `Continue to Payment - $${totalPrice}.00`
+                  `Continue to Payment - $${totalPrice.toFixed(2)}`
                 ) : (
                   "Complete Check-In"
                 )}
