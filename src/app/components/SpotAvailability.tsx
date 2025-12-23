@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, useContext } from "react";
+import { useState, useEffect } from "react";
 import { useTheme } from "./ThemeProvider";
 
 type AvailabilityData = {
@@ -11,15 +11,7 @@ type AvailabilityData = {
 export function SpotAvailability() {
   const [data, setData] = useState<AvailabilityData | null>(null);
   const [loading, setLoading] = useState(true);
-
-  // Use theme context
-  let isDark = false;
-  try {
-    const { theme } = useTheme();
-    isDark = theme === "dark";
-  } catch {
-    // Not wrapped in ThemeProvider, use default
-  }
+  const { isDark } = useTheme();
 
   useEffect(() => {
     fetch("/api/spots/availability")

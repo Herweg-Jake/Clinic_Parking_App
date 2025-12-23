@@ -7,9 +7,14 @@ type Theme = "light" | "dark";
 type ThemeContextType = {
   theme: Theme;
   toggleTheme: () => void;
+  isDark: boolean;
 };
 
-const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
+const ThemeContext = createContext<ThemeContextType>({
+  theme: "light",
+  toggleTheme: () => {},
+  isDark: false,
+});
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setTheme] = useState<Theme>("light");
@@ -30,22 +35,21 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     localStorage.setItem("parking-theme", newTheme);
   };
 
-  // Prevent hydration mismatch by not rendering until mounted
-  if (!mounted) {
-    return <>{children}</>;
-  }
+  const value = {
+    theme,
+    toggleTheme,
+    isDark: theme === "dark",
+  };
 
+  // Always render children, but pass default theme until mounted
+  // This prevents hydration mismatch
   return (
-    <ThemeContext.Provider value={{ theme, toggleTheme }}>
+    <ThemeContext.Provider value={mounted ? value : { theme: "light", toggleTheme: () => {}, isDark: false }}>
       {children}
     </ThemeContext.Provider>
   );
 }
 
 export function useTheme() {
-  const context = useContext(ThemeContext);
-  if (context === undefined) {
-    throw new Error("useTheme must be used within a ThemeProvider");
-  }
-  return context;
+  return useContext(ThemeContext);
 }

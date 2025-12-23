@@ -2,6 +2,7 @@
 import { useSearchParams } from "next/navigation";
 import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
+import { ThemedPage, useThemedClasses } from "../components/ThemedPage";
 
 type PricingInfo = {
   rateCents: number;
@@ -25,12 +26,13 @@ function CheckinForm() {
   const [loading, setLoading] = useState(false);
   const [pricing, setPricing] = useState<PricingInfo | null>(null);
 
-  // Fetch current pricing on mount
+  const theme = useThemedClasses();
+
   useEffect(() => {
     fetch("/api/pricing")
       .then((res) => res.json())
       .then((data) => setPricing(data))
-      .catch(() => setPricing({ rateCents: 200, rateDisplay: "2", isWeekend: false, weekdayRate: 200, weekendRate: 500 }));
+      .catch(() => setPricing({ rateCents: 300, rateDisplay: "3", isWeekend: false, weekdayRate: 300, weekendRate: 500 }));
   }, []);
 
   async function submit() {
@@ -63,362 +65,166 @@ function CheckinForm() {
     }
   }
 
-  // Extract digits from phone for validation
   const phoneDigits = phone.replace(/\D/g, "");
   const isPhoneValid = phoneDigits.length >= 10;
-
   const canSubmit = plate.trim().length >= 2 && spotLabel && parkingType &&
-    (parkingType === "visitor"
-      ? isPhoneValid // Phone required for visitors
-      : (parkingType === "nevada_pt" && nevadaPtCode.trim()));
-
-  // Dynamic pricing based on weekend/weekday
-  const hourlyRate = pricing ? pricing.rateCents / 100 : 2;
+    (parkingType === "visitor" ? isPhoneValid : (parkingType === "nevada_pt" && nevadaPtCode.trim()));
+  const hourlyRate = pricing ? pricing.rateCents / 100 : 3;
   const totalPrice = hours * hourlyRate;
 
-  // Validate license plate format (2-8 alphanumeric characters)
-  const validatePlate = (value: string) => {
-    const cleaned = value.replace(/[^A-Z0-9]/g, '');
-    return cleaned.slice(0, 8); // Max 8 characters
-  };
-
-  // Validate phone number (only digits, dashes, parentheses, spaces)
-  const validatePhone = (value: string) => {
-    return value.replace(/[^0-9\-\(\)\s]/g, '').slice(0, 20);
-  };
-
-  // Validate Nevada PT code (alphanumeric only, max 20 chars)
-  const validateCode = (value: string) => {
-    return value.replace(/[^A-Z0-9]/g, '').slice(0, 20);
-  };
+  const validatePlate = (value: string) => value.replace(/[^A-Z0-9]/g, '').slice(0, 8);
+  const validatePhone = (value: string) => value.replace(/[^0-9\-\(\)\s]/g, '').slice(0, 20);
+  const validateCode = (value: string) => value.replace(/[^A-Z0-9]/g, '').slice(0, 20);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
+    <ThemedPage>
       <main className="container mx-auto max-w-2xl px-4 py-8 sm:px-6 lg:px-8">
-        {/* Header */}
         <div className="mb-8 text-center">
-          <Link href="/" className="inline-block mb-4 text-blue-600 hover:text-blue-700 dark:text-blue-400">
+          <Link href="/" className={`inline-block mb-4 ${theme.link}`}>
             <svg className="inline h-5 w-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
             Back to Home
           </Link>
-          <h1 className="text-4xl font-bold text-gray-900 dark:text-white">
-            Parking Check-In
-          </h1>
-          <p className="mt-2 text-gray-600 dark:text-gray-300">
-            Nevada Physical Therapy - Midtown Location
-          </p>
+          <h1 className={`text-4xl font-bold ${theme.textPrimary}`}>Parking Check-In</h1>
+          <p className={`mt-2 ${theme.textSecondary}`}>Nevada Physical Therapy - Midtown Location</p>
         </div>
 
-        {/* Main Card */}
-        <div className="rounded-2xl bg-white p-8 shadow-xl dark:bg-gray-800">
-          {/* Parking Type Selection - AT THE TOP */}
+        <div className={`rounded-2xl p-8 shadow-xl ${theme.cardBg}`}>
           <div className="mb-8">
-            <label className="mb-3 block text-lg font-semibold text-gray-900 dark:text-white">
+            <label className={`mb-3 block text-lg font-semibold ${theme.textPrimary}`}>
               Are you a patient or paying for parking? <span className="text-red-500">*</span>
             </label>
             <div className="grid gap-4 sm:grid-cols-2">
-              {/* Visitor Parking */}
               <button
                 type="button"
-                onClick={() => {
-                  setParkingType("visitor");
-                  setNevadaPtCode("");
-                }}
+                onClick={() => { setParkingType("visitor"); setNevadaPtCode(""); }}
                 className={`rounded-lg border-2 p-6 text-left transition-all ${
-                  parkingType === "visitor"
-                    ? "border-blue-600 bg-blue-50 dark:bg-blue-900/20 dark:border-blue-500"
-                    : "border-gray-300 bg-white hover:border-blue-300 dark:border-gray-600 dark:bg-gray-700 dark:hover:border-blue-400"
+                  parkingType === "visitor" ? "border-blue-500 bg-blue-500/10" : `${theme.cardBorder} ${theme.cardBg} hover:border-blue-400`
                 }`}
               >
                 <div className="mb-2 flex items-center justify-between">
-                  <svg className="h-8 w-8 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="h-8 w-8 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
                   </svg>
-                  {parkingType === "visitor" && (
-                    <svg className="h-6 w-6 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                    </svg>
-                  )}
+                  {parkingType === "visitor" && <svg className="h-6 w-6 text-blue-500" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" /></svg>}
                 </div>
-                <h3 className="mb-1 text-lg font-semibold text-gray-900 dark:text-white">
-                  Pay for Parking
-                </h3>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  ${pricing ? hourlyRate : 2} per hour
-                  {pricing?.isWeekend && (
-                    <span className="ml-2 inline-block rounded bg-orange-100 px-2 py-0.5 text-xs font-medium text-orange-800 dark:bg-orange-900/30 dark:text-orange-400">
-                      Weekend Rate
-                    </span>
-                  )}
-                </p>
+                <h3 className={`mb-1 text-lg font-semibold ${theme.textPrimary}`}>Pay for Parking</h3>
+                <p className={theme.textSecondary}>${hourlyRate} per hour{pricing?.isWeekend && <span className="ml-2 inline-block rounded bg-orange-500/20 px-2 py-0.5 text-xs font-medium text-orange-500">Weekend Rate</span>}</p>
               </button>
 
-              {/* Nevada PT */}
               <button
                 type="button"
                 onClick={() => setParkingType("nevada_pt")}
                 className={`rounded-lg border-2 p-6 text-left transition-all ${
-                  parkingType === "nevada_pt"
-                    ? "border-green-600 bg-green-50 dark:bg-green-900/20 dark:border-green-500"
-                    : "border-gray-300 bg-white hover:border-green-300 dark:border-gray-600 dark:bg-gray-700 dark:hover:border-green-400"
+                  parkingType === "nevada_pt" ? "border-green-500 bg-green-500/10" : `${theme.cardBorder} ${theme.cardBg} hover:border-green-400`
                 }`}
               >
                 <div className="mb-2 flex items-center justify-between">
-                  <svg className="h-8 w-8 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="h-8 w-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
-                  {parkingType === "nevada_pt" && (
-                    <svg className="h-6 w-6 text-green-600" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                    </svg>
-                  )}
+                  {parkingType === "nevada_pt" && <svg className="h-6 w-6 text-green-500" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" /></svg>}
                 </div>
-                <h3 className="mb-1 text-lg font-semibold text-gray-900 dark:text-white">
-                  Nevada PT Patient
-                </h3>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Patients & Staff
-                </p>
+                <h3 className={`mb-1 text-lg font-semibold ${theme.textPrimary}`}>Nevada PT Patient</h3>
+                <p className={theme.textSecondary}>Patients & Staff</p>
               </button>
             </div>
           </div>
 
-          {/* Conditional Form Based on Selection */}
           {parkingType && (
             <>
-              {/* Spot Selection */}
               <div className="mb-6">
-                <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Parking Spot <span className="text-red-500">*</span>
-                </label>
+                <label className={`mb-2 block text-sm font-medium ${theme.textSecondary}`}>Parking Spot <span className="text-red-500">*</span></label>
                 {spotLabel ? (
-                  <div className="flex items-center justify-between rounded-lg border-2 border-green-500 bg-green-50 p-4 dark:bg-green-900/20">
+                  <div className={`flex items-center justify-between rounded-lg border-2 p-4 ${theme.success}`}>
                     <div className="flex items-center">
-                      <svg className="mr-3 h-8 w-8 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                      </svg>
-                      <span className="text-2xl font-bold text-gray-900 dark:text-white">
-                        Spot {spotLabel}
-                      </span>
+                      <svg className="mr-3 h-8 w-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                      <span className={`text-2xl font-bold ${theme.textPrimary}`}>Spot {spotLabel}</span>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => setSpotLabel("")}
-                      className="text-sm text-blue-600 underline hover:text-blue-700 dark:text-blue-400"
-                    >
-                      Change
-                    </button>
+                    <button type="button" onClick={() => setSpotLabel("")} className={theme.link}>Change</button>
                   </div>
                 ) : (
-                  <select
-                    value=""
-                    onChange={(e) => setSpotLabel(e.target.value)}
-                    className="block w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-                  >
+                  <select value="" onChange={(e) => setSpotLabel(e.target.value)} className={`block w-full rounded-lg border px-4 py-3 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 ${theme.inputBg} ${theme.inputBorder} ${theme.inputText}`}>
                     <option value="">Select your parking spot</option>
-                    {Array.from({ length: 20 }, (_, i) => `A${i + 1}`).map(s => (
-                      <option key={s} value={s}>Spot {s}</option>
-                    ))}
+                    {Array.from({ length: 20 }, (_, i) => `A${i + 1}`).map(s => <option key={s} value={s}>Spot {s}</option>)}
                   </select>
                 )}
               </div>
 
-              {/* License Plate */}
               <div className="mb-6">
-                <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                  License Plate <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  placeholder="ABC1234"
-                  value={plate}
-                  onChange={(e) => setPlate(validatePlate(e.target.value.toUpperCase()))}
-                  maxLength={8}
-                  className="block w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-500"
-                />
-                {plate.length > 0 && plate.length < 2 && (
-                  <p className="mt-1 text-xs text-red-600 dark:text-red-400">
-                    License plate must be at least 2 characters
-                  </p>
-                )}
-                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                  2-8 alphanumeric characters
-                </p>
+                <label className={`mb-2 block text-sm font-medium ${theme.textSecondary}`}>License Plate <span className="text-red-500">*</span></label>
+                <input type="text" placeholder="ABC1234" value={plate} onChange={(e) => setPlate(validatePlate(e.target.value.toUpperCase()))} maxLength={8} className={`block w-full rounded-lg border px-4 py-3 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 ${theme.inputBg} ${theme.inputBorder} ${theme.inputText} ${theme.inputPlaceholder}`} />
+                {plate.length > 0 && plate.length < 2 && <p className="mt-1 text-xs text-red-500">License plate must be at least 2 characters</p>}
+                <p className={`mt-1 text-xs ${theme.textMuted}`}>2-8 alphanumeric characters</p>
               </div>
 
-              {/* Nevada PT Code Input - Only for PT Patients */}
               {parkingType === "nevada_pt" && (
-                <div className="mb-6 rounded-lg border-2 border-green-500 bg-green-50 p-4 dark:bg-green-900/20 dark:border-green-600">
-                  <label className="mb-2 block text-sm font-medium text-gray-900 dark:text-white">
-                    Enter Nevada PT Code <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="Enter code"
-                    value={nevadaPtCode}
-                    onChange={(e) => setNevadaPtCode(validateCode(e.target.value.toUpperCase()))}
-                    maxLength={20}
-                    className="block w-full rounded-lg border border-green-300 bg-white px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-green-500 focus:ring-2 focus:ring-green-500 dark:border-green-600 dark:bg-gray-700 dark:text-white"
-                  />
-                  <p className="mt-2 text-xs text-gray-600 dark:text-gray-400">
-                    Ask front desk staff if you don't have your code
-                  </p>
+                <div className={`mb-6 rounded-lg border-2 p-4 ${theme.success}`}>
+                  <label className={`mb-2 block text-sm font-medium ${theme.textPrimary}`}>Enter Nevada PT Code <span className="text-red-500">*</span></label>
+                  <input type="text" placeholder="Enter code" value={nevadaPtCode} onChange={(e) => setNevadaPtCode(validateCode(e.target.value.toUpperCase()))} maxLength={20} className={`block w-full rounded-lg border border-green-400 px-4 py-3 focus:border-green-500 focus:ring-2 focus:ring-green-500 ${theme.inputBg} ${theme.inputText}`} />
+                  <p className={`mt-2 text-xs ${theme.textMuted}`}>Ask front desk staff if you don't have your code</p>
                 </div>
               )}
 
-              {/* Visitor-Only Fields */}
               {parkingType === "visitor" && (
                 <>
-                  {/* Phone - Required for SMS notifications */}
                   <div className="mb-6">
-                    <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                      Phone Number <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="tel"
-                      placeholder="(555) 123-4567"
-                      value={phone}
-                      onChange={(e) => setPhone(validatePhone(e.target.value))}
-                      maxLength={20}
-                      className={`block w-full rounded-lg border bg-white px-4 py-3 text-gray-900 placeholder-gray-400 focus:ring-2 dark:bg-gray-700 dark:text-white dark:placeholder-gray-500 ${
-                        phone && !isPhoneValid
-                          ? "border-red-500 focus:border-red-500 focus:ring-red-500"
-                          : "border-gray-300 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600"
-                      }`}
-                    />
-                    {phone && !isPhoneValid && (
-                      <p className="mt-1 text-xs text-red-600 dark:text-red-400">
-                        Please enter a valid 10-digit phone number
-                      </p>
-                    )}
-                    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                      Required for parking status updates and expiration reminders
-                    </p>
+                    <label className={`mb-2 block text-sm font-medium ${theme.textSecondary}`}>Phone Number <span className="text-red-500">*</span></label>
+                    <input type="tel" placeholder="(555) 123-4567" value={phone} onChange={(e) => setPhone(validatePhone(e.target.value))} maxLength={20} className={`block w-full rounded-lg border px-4 py-3 focus:ring-2 ${theme.inputBg} ${theme.inputText} ${theme.inputPlaceholder} ${phone && !isPhoneValid ? "border-red-500 focus:border-red-500 focus:ring-red-500" : `${theme.inputBorder} focus:border-blue-500 focus:ring-blue-500`}`} />
+                    {phone && !isPhoneValid && <p className="mt-1 text-xs text-red-500">Please enter a valid 10-digit phone number</p>}
+                    <p className={`mt-1 text-xs ${theme.textMuted}`}>Required for parking status updates</p>
                   </div>
 
-                  {/* Email - Optional */}
                   <div className="mb-6">
-                    <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                      Email (Optional)
-                    </label>
-                    <input
-                      type="email"
-                      placeholder="your@email.com"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value.trim())}
-                      maxLength={100}
-                      className="block w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-500"
-                    />
-                    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                      For receipt and confirmation
-                    </p>
+                    <label className={`mb-2 block text-sm font-medium ${theme.textSecondary}`}>Email (Optional)</label>
+                    <input type="email" placeholder="your@email.com" value={email} onChange={(e) => setEmail(e.target.value.trim())} maxLength={100} className={`block w-full rounded-lg border px-4 py-3 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 ${theme.inputBg} ${theme.inputBorder} ${theme.inputText} ${theme.inputPlaceholder}`} />
                   </div>
 
-                  {/* Hours Selection */}
                   <div className="mb-6">
-                    <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                      How many hours? <span className="text-red-500">*</span>
-                    </label>
-                    <select
-                      value={hours}
-                      onChange={(e) => setHours(Number(e.target.value))}
-                      className="block w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-                    >
-                      {Array.from({ length: 12 }, (_, i) => i + 1).map((h) => (
-                        <option key={h} value={h}>
-                          {h} {h === 1 ? 'hour' : 'hours'} - ${(h * hourlyRate).toFixed(2)}
-                        </option>
-                      ))}
+                    <label className={`mb-2 block text-sm font-medium ${theme.textSecondary}`}>How many hours? <span className="text-red-500">*</span></label>
+                    <select value={hours} onChange={(e) => setHours(Number(e.target.value))} className={`block w-full rounded-lg border px-4 py-3 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 ${theme.inputBg} ${theme.inputBorder} ${theme.inputText}`}>
+                      {Array.from({ length: 12 }, (_, i) => i + 1).map((h) => <option key={h} value={h}>{h} {h === 1 ? 'hour' : 'hours'} - ${(h * hourlyRate).toFixed(2)}</option>)}
                     </select>
-                    <div className="mt-3 rounded-lg bg-blue-50 p-3 dark:bg-blue-900/20">
-                      <p className="text-sm font-semibold text-blue-900 dark:text-blue-300">
-                        Total: ${totalPrice.toFixed(2)}
-                        {pricing?.isWeekend && (
-                          <span className="ml-2 text-xs font-normal text-orange-600 dark:text-orange-400">
-                            (Weekend pricing)
-                          </span>
-                        )}
-                      </p>
+                    <div className={`mt-3 rounded-lg p-3 ${theme.info}`}>
+                      <p className="text-sm font-semibold">Total: ${totalPrice.toFixed(2)}{pricing?.isWeekend && <span className="ml-2 text-xs font-normal text-orange-500">(Weekend pricing)</span>}</p>
                     </div>
                   </div>
                 </>
               )}
 
-              {/* Submit Button */}
-              <button
-                onClick={submit}
-                disabled={!canSubmit || loading}
-                className="w-full rounded-lg bg-blue-600 px-6 py-4 text-lg font-semibold text-white shadow-lg transition-all hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-gray-400 disabled:hover:bg-gray-400"
-              >
-                {loading ? (
-                  <span className="flex items-center justify-center">
-                    <svg className="mr-2 h-5 w-5 animate-spin" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    Processing...
-                  </span>
-                ) : parkingType === "visitor" ? (
-                  `Continue to Payment - $${totalPrice.toFixed(2)}`
-                ) : (
-                  "Complete Check-In"
-                )}
+              <button onClick={submit} disabled={!canSubmit || loading} className={`w-full rounded-lg px-6 py-4 text-lg font-semibold shadow-lg transition-all disabled:cursor-not-allowed disabled:bg-gray-400 ${theme.primaryBtn}`}>
+                {loading ? <span className="flex items-center justify-center"><svg className="mr-2 h-5 w-5 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>Processing...</span> : parkingType === "visitor" ? `Continue to Payment - $${totalPrice.toFixed(2)}` : "Complete Check-In"}
               </button>
 
-              {/* Message Display */}
               {msg && (
-                <div className={`mt-4 rounded-lg p-4 ${
-                  msg.includes("Error") || msg.includes("error") || msg.includes("failed") || msg.includes("Invalid")
-                    ? "bg-red-50 text-red-800 dark:bg-red-900/20 dark:text-red-400"
-                    : "bg-green-50 text-green-800 dark:bg-green-900/20 dark:text-green-400"
-                }`}>
-                  <div className="flex items-center">
-                    {msg.includes("Error") || msg.includes("error") || msg.includes("failed") || msg.includes("Invalid") ? (
-                      <svg className="mr-2 h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                      </svg>
-                    ) : (
-                      <svg className="mr-2 h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                      </svg>
-                    )}
-                    <span className="font-medium">{msg}</span>
-                  </div>
+                <div className={`mt-4 rounded-lg p-4 ${msg.includes("Error") || msg.includes("error") || msg.includes("failed") || msg.includes("Invalid") ? theme.error : theme.success}`}>
+                  <div className="flex items-center"><span className="font-medium">{msg}</span></div>
                 </div>
               )}
             </>
           )}
 
-          {!parkingType && (
-            <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-              Please select whether you're paying for parking or a Nevada PT patient to continue
-            </div>
-          )}
+          {!parkingType && <div className={`text-center py-8 ${theme.textMuted}`}>Please select whether you're paying for parking or a Nevada PT patient to continue</div>}
         </div>
 
-        {/* Help Text */}
-        <p className="mt-6 text-center text-sm text-gray-600 dark:text-gray-400">
-          Need help? Contact Nevada PT front desk
-        </p>
+        <p className={`mt-6 text-center text-sm ${theme.textSecondary}`}>Need help? Contact Nevada PT front desk</p>
       </main>
-    </div>
+    </ThemedPage>
   );
 }
 
 function CheckinLoading() {
+  const theme = useThemedClasses();
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center">
-      <div className="text-center">
-        <svg className="mx-auto h-12 w-12 animate-spin text-blue-600" fill="none" viewBox="0 0 24 24">
-          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-        </svg>
-        <p className="mt-4 text-gray-600 dark:text-gray-400">Loading...</p>
+    <ThemedPage>
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <svg className="mx-auto h-12 w-12 animate-spin text-blue-500" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+          <p className={`mt-4 ${theme.textMuted}`}>Loading...</p>
+        </div>
       </div>
-    </div>
+    </ThemedPage>
   );
 }
 

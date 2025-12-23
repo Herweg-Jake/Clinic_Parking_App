@@ -3,12 +3,11 @@
 import Link from "next/link";
 import { SpotAvailability } from "./components/SpotAvailability";
 import { Logo } from "./components/Logo";
-import { ThemeProvider, useTheme } from "./components/ThemeProvider";
+import { useTheme } from "./components/ThemeProvider";
 import { ThemeToggle } from "./components/ThemeToggle";
 
-function HomeContent() {
-  const { theme } = useTheme();
-  const isDark = theme === "dark";
+export default function Home() {
+  const { isDark } = useTheme();
 
   return (
     <div
@@ -74,13 +73,5 @@ function HomeContent() {
         </div>
       </main>
     </div>
-  );
-}
-
-export default function Home() {
-  return (
-    <ThemeProvider>
-      <HomeContent />
-    </ThemeProvider>
   );
 }
