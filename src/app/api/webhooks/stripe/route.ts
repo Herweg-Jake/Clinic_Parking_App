@@ -23,6 +23,20 @@ export async function POST(req: Request) {
     return new NextResponse(`Webhook Error: ${err.message}`, { status: 400 });
   }
 
+  // Handle abandoned or failed checkouts — clean up stale "initiated" payment records
+  if (
+    event.type === "checkout.session.expired" ||
+    event.type === "checkout.session.async_payment_failed"
+  ) {
+    const cs = event.data.object as Stripe.Checkout.Session;
+    await prisma.payment.updateMany({
+      where: { stripeCheckoutSessionId: cs.id, status: "initiated" },
+      data: { status: "failed" },
+    });
+    console.log(`[Stripe Webhook] Marked payment as failed for ${event.type}:`, cs.id);
+    return NextResponse.json({ received: true });
+  }
+
   if (event.type === "checkout.session.completed") {
     const cs = event.data.object as Stripe.Checkout.Session;
 
@@ -98,25 +112,38 @@ export async function POST(req: Request) {
         return NextResponse.json({ received: true, error: "Missing metadata" });
       }
 
-      // Look up spot and vehicle - create vehicle if it doesn't exist
-      const [spot, existingVehicle] = await Promise.all([
+      // Idempotency guard: check if a session was already created for this checkout
+      const existingSession = await prisma.session.findFirst({
+        where: {
+          payment: { stripeCheckoutSessionId: cs.id },
+        },
+      });
+      if (existingSession) {
+        console.log("[Stripe Webhook] Session already exists for checkout, skipping:", cs.id);
+        return NextResponse.json({ received: true });
+      }
+
+      // Look up spot and vehicle - use upsert to avoid unique constraint race condition
+      const [spot, vehicle] = await Promise.all([
         prisma.spot.findUnique({ where: { label: spotLabel } }),
-        prisma.vehicle.findUnique({ where: { licensePlate: plate } }),
+        prisma.vehicle.upsert({
+          where: { licensePlate: plate },
+          update: {
+            ownerEmail: cs.metadata?.email || undefined,
+            ownerPhone: phone || undefined,
+          },
+          create: {
+            licensePlate: plate,
+            ownerEmail: cs.metadata?.email || null,
+            ownerPhone: phone,
+          },
+        }),
       ]);
 
       if (!spot) {
         console.error("[Stripe Webhook] Spot not found:", spotLabel);
         return NextResponse.json({ received: true, error: "Spot not found" });
       }
-
-      // Create vehicle if it doesn't exist (fallback for race condition)
-      const vehicle = existingVehicle || await prisma.vehicle.create({
-        data: {
-          licensePlate: plate,
-          ownerEmail: cs.metadata?.email || null,
-          ownerPhone: phone,
-        },
-      });
 
       console.log("[Stripe Webhook] Found/created records:", {
         spotId: spot.id,
@@ -146,7 +173,12 @@ export async function POST(req: Request) {
         data: { status: SessionStatus.void, notes: "spot taken by new user" },
       });
 
-      // Create paid session
+      // Find the payment record to link to the session
+      const payment = await prisma.payment.findFirst({
+        where: { stripeCheckoutSessionId: cs.id },
+      });
+
+      // Create paid session linked to payment
       const newSession = await prisma.session.create({
         data: {
           vehicleId: vehicle.id,
@@ -155,6 +187,7 @@ export async function POST(req: Request) {
           source: "visitor_payment",
           expiresAt,
           phoneNumber: phone,
+          paymentId: payment?.id || null,
         },
       });
 

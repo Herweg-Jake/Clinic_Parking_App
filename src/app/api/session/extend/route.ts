@@ -106,14 +106,19 @@ export async function POST(req: Request) {
       },
     });
 
-    // Track payment initiation
-    prisma.payment.create({
-      data: {
-        stripeCheckoutSessionId: checkout.id,
-        amountCents: totalCents,
-        status: "initiated",
-      },
-    }).catch((err: unknown) => console.error("Failed to track extension payment:", err));
+    // Track payment initiation - MUST await to ensure record exists before webhook
+    try {
+      await prisma.payment.create({
+        data: {
+          stripeCheckoutSessionId: checkout.id,
+          amountCents: totalCents,
+          status: "initiated",
+        },
+      });
+    } catch (err: unknown) {
+      console.error("Failed to track extension payment:", err);
+      // Continue anyway - webhook will still work with metadata
+    }
 
     return NextResponse.json({ redirectUrl: checkout.url });
   } catch (error: any) {
