@@ -15,7 +15,8 @@
     "db:check": "ts-node --compiler-options '{\"module\":\"CommonJS\"}' scripts/check-db.ts",
     "db:update-pricing": "ts-node --compiler-options '{\"module\":\"CommonJS\"}' scripts/update-pricing.ts",
     "admin:add": "ts-node --compiler-options '{\"module\":\"CommonJS\"}' scripts/add-admin.ts",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate",
+    "test:integrations": "ts-node --compiler-options '{\"module\":\"CommonJS\"}' scripts/integration-services.ts"
   },
   "prisma": {
     "seed": "ts-node --compiler-options '{\"module\":\"CommonJS\"}' prisma/seed.ts"
