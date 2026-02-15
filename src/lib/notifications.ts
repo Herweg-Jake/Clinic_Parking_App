@@ -1,21 +1,38 @@
 import { prisma } from "./prisma";
 import { SessionStatus } from "@prisma/client";
 import { sendExpirationWarning, isTwilioConfigured } from "./sms";
-import { createExtensionToken, buildExtendUrl } from "./tokens";
+import { createExtensionToken, buildExtendUrl, cleanupExpiredTokens } from "./tokens";
 
 /**
  * Check and send notifications for sessions expiring soon.
- * This can be called on-demand from API routes to ensure notifications
- * are sent even without frequent cron jobs.
+ * Also performs lightweight housekeeping (mark expired sessions, clean tokens).
  *
- * Returns the number of notifications sent.
+ * Called on-demand from API routes to compensate for Vercel Hobby plan's
+ * daily-only cron limitation. Returns the number of notifications sent.
  */
 export async function checkAndSendNotifications(): Promise<number> {
+  const now = new Date();
+
+  try {
+    // Housekeeping: mark expired sessions so admin dashboard is accurate
+    await prisma.session.updateMany({
+      where: {
+        status: SessionStatus.paid,
+        expiresAt: { lt: now },
+      },
+      data: { status: SessionStatus.expired },
+    });
+
+    // Housekeeping: clean up used/expired extension tokens periodically
+    await cleanupExpiredTokens();
+  } catch (error) {
+    console.error("Background housekeeping error:", error);
+  }
+
   if (!isTwilioConfigured()) {
     return 0;
   }
 
-  const now = new Date();
   const tenMinutesFromNow = new Date(now.getTime() + 10 * 60 * 1000);
   const fifteenMinutesFromNow = new Date(now.getTime() + 15 * 60 * 1000);
 
