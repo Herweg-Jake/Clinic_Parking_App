@@ -142,6 +142,7 @@ export async function POST(req: Request) {
           hour: "numeric",
           minute: "2-digit",
           hour12: true,
+          timeZone: "America/Los_Angeles",
         });
         return twimlResponse(
           `Spot ${session.spot.label} (${session.vehicle.licensePlate}): ` +

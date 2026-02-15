@@ -63,6 +63,7 @@ export async function sendExpirationWarning(
     hour: "numeric",
     minute: "2-digit",
     hour12: true,
+    timeZone: "America/Los_Angeles",
   });
 
   const message = `Nevada PT Parking: Your spot ${spotLabel} expires in ~${expiresIn} min (at ${timeStr}).
@@ -87,6 +88,7 @@ export async function sendParkingConfirmation(
     hour: "numeric",
     minute: "2-digit",
     hour12: true,
+    timeZone: "America/Los_Angeles",
   });
 
   const message = `Nevada PT Parking: Spot ${spotLabel} confirmed until ${timeStr}.
