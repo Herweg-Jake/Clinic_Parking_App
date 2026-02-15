@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { SessionStatus } from "@prisma/client";
 import { sendExpirationWarning, sendExpiredNotification, isTwilioConfigured } from "@/lib/sms";
-import { createExtensionToken, buildExtendUrl, buildCheckinUrl } from "@/lib/tokens";
+import { createExtensionToken, buildExtendUrl, buildCheckinUrl, cleanupExpiredTokens } from "@/lib/tokens";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60; // Allow up to 60 seconds for this cron job
@@ -40,6 +40,8 @@ export async function GET(request: Request) {
   const results = {
     warnings: { sent: 0, failed: 0 },
     expired: { sent: 0, failed: 0 },
+    sessionsMarkedExpired: 0,
+    tokensCleanedUp: 0,
   };
 
   try {
@@ -142,6 +144,19 @@ export async function GET(request: Request) {
         results.expired.failed++;
       }
     }
+
+    // 3) Actively mark expired sessions so the admin dashboard reflects reality
+    const expiredResult = await prisma.session.updateMany({
+      where: {
+        status: SessionStatus.paid,
+        expiresAt: { lt: now },
+      },
+      data: { status: SessionStatus.expired },
+    });
+    results.sessionsMarkedExpired = expiredResult.count;
+
+    // 4) Clean up used/expired extension tokens to prevent DB bloat
+    results.tokensCleanedUp = await cleanupExpiredTokens();
 
     return NextResponse.json({
       success: true,

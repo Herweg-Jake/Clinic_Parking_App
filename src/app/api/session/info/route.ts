@@ -3,10 +3,13 @@ import { prisma } from "@/lib/prisma";
 import { validateExtensionToken } from "@/lib/tokens";
 import { getParkingConfig } from "@/lib/config";
 import { SessionStatus } from "@prisma/client";
+import { triggerNotificationCheck } from "@/lib/notifications";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(request: Request) {
+  // Trigger notification check in background (on-demand for Hobby plan)
+  triggerNotificationCheck();
   const { searchParams } = new URL(request.url);
   const token = searchParams.get("token");
   const sessionId = searchParams.get("session");

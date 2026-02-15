@@ -5,10 +5,14 @@ import { normalizePlate } from "@/lib/plates";
 import { getParkingConfig } from "@/lib/config";
 import { checkinSchema, formatPhoneE164 } from "@/lib/schemas";
 import { SessionStatus } from "@prisma/client";
+import { triggerNotificationCheck } from "@/lib/notifications";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || ""); // use account default API version
 
 export async function POST(req: Request) {
+  // Trigger notification check in background (on-demand for Hobby plan)
+  triggerNotificationCheck();
+
   try {
     const body = await req.json();
     const parsed = checkinSchema.safeParse(body);

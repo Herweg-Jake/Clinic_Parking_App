@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import Twilio from "twilio";
 import { prisma } from "@/lib/prisma";
 import { SessionStatus } from "@prisma/client";
 import { sendSMS } from "@/lib/sms";
@@ -6,6 +7,27 @@ import { createExtensionToken, buildExtendUrl, buildCheckinUrl } from "@/lib/tok
 import { formatPhoneE164 } from "@/lib/schemas";
 
 export const dynamic = "force-dynamic";
+
+/**
+ * Verify incoming Twilio request signature.
+ * In production, requires TWILIO_AUTH_TOKEN to be set.
+ * Skipped in development if auth token is not configured.
+ */
+function verifyTwilioSignature(req: Request, params: Record<string, string>): boolean {
+  const authToken = process.env.TWILIO_AUTH_TOKEN;
+  if (!authToken) {
+    // Allow in development when Twilio isn't configured
+    return process.env.NODE_ENV === "development";
+  }
+
+  const signature = req.headers.get("x-twilio-signature");
+  if (!signature) return false;
+
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
+  const url = `${baseUrl}/api/webhooks/twilio`;
+
+  return Twilio.validateRequest(authToken, signature, url, params);
+}
 
 /**
  * Twilio webhook for incoming SMS messages.
@@ -20,6 +42,18 @@ export async function POST(req: Request) {
   try {
     // Parse form data from Twilio
     const formData = await req.formData();
+
+    // Convert form data to plain object for signature validation
+    const formParams: Record<string, string> = {};
+    formData.forEach((value, key) => {
+      formParams[key] = String(value);
+    });
+
+    // Verify Twilio request signature to prevent spoofed requests
+    if (!verifyTwilioSignature(req, formParams)) {
+      console.warn("[Twilio Webhook] Invalid signature — rejecting request");
+      return new NextResponse("Forbidden", { status: 403 });
+    }
     const from = formData.get("From") as string;
     const body = (formData.get("Body") as string || "").trim().toUpperCase();
 
@@ -108,6 +142,7 @@ export async function POST(req: Request) {
           hour: "numeric",
           minute: "2-digit",
           hour12: true,
+          timeZone: "America/Los_Angeles",
         });
         return twimlResponse(
           `Spot ${session.spot.label} (${session.vehicle.licensePlate}): ` +

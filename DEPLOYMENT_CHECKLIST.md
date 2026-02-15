@@ -42,14 +42,14 @@ Then navigate to Config table and update the `nevada_pt_code` row.
 **Set environment variables:**
 ```env
 STRIPE_SECRET_KEY=sk_live_...          # Your Stripe secret key
-STRIPE_PUBLISHABLE_KEY=pk_live_...    # Your Stripe publishable key
 STRIPE_WEBHOOK_SECRET=whsec_...       # From Stripe webhook setup
 ```
+> Note: `STRIPE_PUBLISHABLE_KEY` is not needed — the app uses server-side Checkout Sessions and redirects to Stripe-hosted pages.
 
 **Setup Stripe Webhook:**
 1. Go to Stripe Dashboard → Developers → Webhooks
 2. Add endpoint: `https://your-domain.com/api/webhooks/stripe`
-3. Select event: `checkout.session.completed`
+3. Select events: `checkout.session.completed`, `checkout.session.expired`, `checkout.session.async_payment_failed`
 4. Copy webhook secret to `STRIPE_WEBHOOK_SECRET`
 
 **Test payments:**
@@ -114,8 +114,15 @@ DATABASE_URL=postgresql://...
 
 # Stripe
 STRIPE_SECRET_KEY=sk_live_...
-STRIPE_PUBLISHABLE_KEY=pk_live_...
 STRIPE_WEBHOOK_SECRET=whsec_...
+
+# Twilio SMS
+TWILIO_ACCOUNT_SID=AC...
+TWILIO_AUTH_TOKEN=...
+TWILIO_PHONE_NUMBER=+1...
+
+# Cron authentication
+CRON_SECRET=your_random_secret_here
 
 # Supabase
 NEXT_PUBLIC_SUPABASE_URL=https://...
