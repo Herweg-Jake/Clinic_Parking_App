@@ -140,6 +140,7 @@ This app uses PostgreSQL with Prisma ORM.
 - `npm run migrate:dev` - Run migrations (dev)
 - `npm run migrate:deploy` - Run migrations (production)
 - `npm run db:seed` - Seed database with initial data
+- `npm run test:integrations` - Run integration checks for DB, Stripe, and Twilio
 
 ## Usage
 
