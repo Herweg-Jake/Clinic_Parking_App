@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { getBrowserSupabase } from "@/lib/supabase/client";
 import Link from "next/link";
+import { HelpFooter } from "../components/HelpFooter";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -137,6 +138,8 @@ export default function LoginPage() {
             <p>Contact the system administrator if you need access</p>
           </div>
         </div>
+
+        <HelpFooter />
       </main>
     </div>
   );

@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
+import { HelpFooter } from "../../components/HelpFooter";
 
 type SessionInfo = {
   id: string;
@@ -240,9 +241,7 @@ export default function ExtendPage() {
           )}
         </div>
 
-        <p className="mt-6 text-center text-sm text-gray-600 dark:text-gray-400">
-          Need help? Contact Nevada PT front desk
-        </p>
+        <HelpFooter />
       </main>
     </div>
   );

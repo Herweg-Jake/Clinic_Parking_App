@@ -5,6 +5,7 @@ import { SpotAvailability } from "./components/SpotAvailability";
 import { Logo } from "./components/Logo";
 import { useTheme } from "./components/ThemeProvider";
 import { ThemeToggle } from "./components/ThemeToggle";
+import { HelpFooter } from "./components/HelpFooter";
 
 export default function Home() {
   const { isDark } = useTheme();
@@ -70,6 +71,8 @@ export default function Home() {
               </Link>
             </div>
           </div>
+
+          <HelpFooter />
         </div>
       </main>
     </div>
