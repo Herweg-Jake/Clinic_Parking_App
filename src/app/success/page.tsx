@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { ThemedPage, useThemedClasses } from "../components/ThemedPage";
+import { HelpFooter } from "../components/HelpFooter";
 
 function SuccessContent() {
   const searchParams = useSearchParams();
@@ -152,15 +153,7 @@ function SuccessContent() {
           </div>
         </div>
 
-        {/* Footer Help */}
-        <div className="mt-8 text-center">
-          <p className={`text-sm ${textMuted}`}>
-            Questions about your parking session?
-          </p>
-          <p className={`mt-1 text-sm font-medium ${textSecondary}`}>
-            Contact the clinic front desk
-          </p>
-        </div>
+        <HelpFooter />
       </main>
     </ThemedPage>
   );

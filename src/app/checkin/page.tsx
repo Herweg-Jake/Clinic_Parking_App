@@ -3,6 +3,7 @@ import { useSearchParams } from "next/navigation";
 import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { ThemedPage, useThemedClasses } from "../components/ThemedPage";
+import { HelpFooter } from "../components/HelpFooter";
 
 type PricingInfo = {
   rateCents: number;
@@ -173,7 +174,10 @@ function CheckinForm() {
                     <label className={`mb-2 block text-sm font-medium ${theme.textSecondary}`}>Phone Number <span className="text-red-500">*</span></label>
                     <input type="tel" placeholder="(555) 123-4567" value={phone} onChange={(e) => setPhone(validatePhone(e.target.value))} maxLength={20} className={`block w-full rounded-lg border px-4 py-3 focus:ring-2 ${theme.inputBg} ${theme.inputText} ${theme.inputPlaceholder} ${phone && !isPhoneValid ? "border-red-500 focus:border-red-500 focus:ring-red-500" : `${theme.inputBorder} focus:border-blue-500 focus:ring-blue-500`}`} />
                     {phone && !isPhoneValid && <p className="mt-1 text-xs text-red-500">Please enter a valid 10-digit phone number</p>}
-                    <p className={`mt-1 text-xs ${theme.textMuted}`}>Required for parking status updates</p>
+                    <p className={`mt-2 text-xs leading-relaxed ${theme.textMuted}`}>
+                      By entering your phone number, you agree to receive SMS notifications from Nevada Physical Therapy Parking, including parking confirmations, expiration warnings, and extension links. Message frequency varies. Message and data rates may apply. Reply STOP to unsubscribe. See our{" "}
+                      <Link href="/terms" className={theme.link}>Terms &amp; Conditions</Link>.
+                    </p>
                   </div>
 
                   <div className="mb-6">
@@ -208,7 +212,7 @@ function CheckinForm() {
           {!parkingType && <div className={`text-center py-8 ${theme.textMuted}`}>Please select whether you're paying for parking or a Nevada PT patient to continue</div>}
         </div>
 
-        <p className={`mt-6 text-center text-sm ${theme.textSecondary}`}>Need help? Contact Nevada PT front desk</p>
+        <HelpFooter />
       </main>
     </ThemedPage>
   );

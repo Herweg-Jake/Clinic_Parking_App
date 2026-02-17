@@ -3,6 +3,7 @@ import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { ThemedPage, useThemedClasses } from "../components/ThemedPage";
+import { HelpFooter } from "../components/HelpFooter";
 
 type SessionInfo = {
   id: string;
@@ -277,9 +278,7 @@ function StatusContent() {
           )}
         </div>
 
-        <p className={`mt-6 text-center text-sm ${textMuted}`}>
-          Need help? Contact Nevada PT front desk
-        </p>
+        <HelpFooter />
       </main>
     </ThemedPage>
   );
