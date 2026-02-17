@@ -114,3 +114,23 @@ model ExtensionToken {
   @@index([token])
   @@index([sessionId])
 }
+
+model Ticket {
+  id          String    @id @default(cuid())
+  code        String    @unique // e.g. "TKT-001"
+  plate       String    // license plate (normalized)
+  spot        String    // spot label e.g. "A5"
+  amountCents Int       // fine amount in cents
+  notes       String?   // optional officer notes
+  issuedBy    String    // admin user email who issued it
+  issuedAt    DateTime  @default(now())
+  paidAt      DateTime? // null until paid
+
+  @@index([code])
+  @@index([plate])
+}
+
+model TicketCounter {
+  id    String @id @default("singleton")
+  count Int    @default(0)
+}

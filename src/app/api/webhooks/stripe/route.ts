@@ -49,7 +49,19 @@ export async function POST(req: Request) {
     // Check if this is an extension payment
     const paymentType = cs.metadata?.type;
 
-    if (paymentType === "extension") {
+    if (paymentType === "ticket_payment") {
+      // Handle parking ticket payment
+      const ticketId = cs.metadata?.ticketId;
+      const ticketCode = cs.metadata?.ticketCode;
+
+      if (ticketId) {
+        await prisma.ticket.update({
+          where: { id: ticketId },
+          data: { paidAt: new Date() },
+        });
+        console.log(`[Stripe Webhook] Ticket ${ticketCode} marked as paid`);
+      }
+    } else if (paymentType === "extension") {
       // Handle extension payment
       const sessionId = cs.metadata?.sessionId;
       const extensionToken = cs.metadata?.extensionToken;
