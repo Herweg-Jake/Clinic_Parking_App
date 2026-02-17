@@ -164,6 +164,12 @@ export default function AdminActivePage() {
           </div>
           <div className="flex gap-3">
             <Link
+              href="/admin/tickets"
+              className="rounded-lg border-2 border-silver-300 bg-white px-4 py-2 font-medium text-gray-700 transition-all hover:border-blue-500 dark:border-silver-600 dark:bg-gray-700 dark:text-gray-200"
+            >
+              Tickets
+            </Link>
+            <Link
               href="/admin/permits"
               className="rounded-lg border-2 border-silver-300 bg-white px-4 py-2 font-medium text-gray-700 transition-all hover:border-blue-500 dark:border-silver-600 dark:bg-gray-700 dark:text-gray-200"
             >

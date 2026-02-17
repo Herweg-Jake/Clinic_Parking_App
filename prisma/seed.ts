@@ -28,7 +28,14 @@ async function main() {
     });
   }
 
-  console.log("Seed complete: spots A1–A20 + default config");
+  // Ticket counter singleton (for sequential ticket codes)
+  await prisma.ticketCounter.upsert({
+    where: { id: "singleton" },
+    update: {},
+    create: { id: "singleton", count: 0 },
+  });
+
+  console.log("Seed complete: spots A1–A20 + default config + ticket counter");
 }
 
 main()
