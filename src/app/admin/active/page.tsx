@@ -3,6 +3,13 @@ import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
+type Payment = {
+  id: string;
+  amountCents: number;
+  status: string;
+  paidAt: string | null;
+} | null;
+
 type Row = {
   id: string;
   status: string;
@@ -11,6 +18,7 @@ type Row = {
   source: string;
   spot: { label: string };
   vehicle: { licensePlate: string };
+  payment: Payment;
 };
 
 type RevenueData = {
@@ -114,6 +122,34 @@ export default function AdminActivePage() {
 
     return () => clearInterval(interval);
   }, [autoRefresh, load, loadRevenue, showRevenue]);
+
+  const [refundingId, setRefundingId] = useState<string | null>(null);
+  const [confirmRefund, setConfirmRefund] = useState<Row | null>(null);
+  const [refundReason, setRefundReason] = useState("");
+
+  async function performRefund(row: Row) {
+    setError(null);
+    setRefundingId(row.id);
+    try {
+      const res = await fetch(`/api/admin/sessions/${row.id}/refund`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reason: refundReason.trim() || undefined }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setError(data.error || `Refund failed (${res.status})`);
+        return;
+      }
+      setConfirmRefund(null);
+      setRefundReason("");
+      await load();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Refund failed");
+    } finally {
+      setRefundingId(null);
+    }
+  }
 
   async function extend(id: string) {
     setError(null);
@@ -367,6 +403,7 @@ export default function AdminActivePage() {
                   <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white">Started</th>
                   <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white">Expires</th>
                   <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white">Source</th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white">Payment</th>
                   <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white">Action</th>
                 </tr>
               </thead>
@@ -392,23 +429,53 @@ export default function AdminActivePage() {
                       {s.expiresAt ? new Date(s.expiresAt).toLocaleString() : "-"}
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">{s.source}</td>
-                    <td className="px-6 py-4">
-                      {tab === "active" ? (
-                        <button
-                          onClick={() => extend(s.id)}
-                          className="rounded-lg bg-green-600 px-4 py-1.5 text-sm font-medium text-white transition-all hover:bg-green-700 active:scale-95"
-                        >
-                          +15m
-                        </button>
+                    <td className="px-6 py-4 text-sm">
+                      {s.payment ? (
+                        <div>
+                          <div className="font-medium text-gray-900 dark:text-white">
+                            ${(s.payment.amountCents / 100).toFixed(2)}
+                          </div>
+                          <div className={`text-xs ${
+                            s.payment.status === "paid" ? "text-green-600 dark:text-green-400" :
+                            s.payment.status === "refunded" ? "text-orange-600 dark:text-orange-400" :
+                            "text-gray-500"
+                          }`}>
+                            {s.payment.status}
+                          </div>
+                        </div>
                       ) : (
-                        <span className="text-gray-400">-</span>
+                        <span className="text-gray-400">—</span>
                       )}
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex flex-col gap-1.5 sm:flex-row">
+                        {tab === "active" && (
+                          <button
+                            onClick={() => extend(s.id)}
+                            className="rounded-lg bg-green-600 px-4 py-1.5 text-sm font-medium text-white transition-all hover:bg-green-700 active:scale-95"
+                          >
+                            +15m
+                          </button>
+                        )}
+                        {s.payment && s.payment.status === "paid" && (
+                          <button
+                            onClick={() => { setConfirmRefund(s); setRefundReason(""); }}
+                            disabled={refundingId === s.id}
+                            className="rounded-lg bg-red-600 px-4 py-1.5 text-sm font-medium text-white transition-all hover:bg-red-700 active:scale-95 disabled:bg-silver-400"
+                          >
+                            Refund
+                          </button>
+                        )}
+                        {tab !== "active" && !(s.payment && s.payment.status === "paid") && (
+                          <span className="text-gray-400">-</span>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}
                 {rows.length === 0 && !loading && !error && (
                   <tr>
-                    <td colSpan={7} className="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
+                    <td colSpan={8} className="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
                       <svg className="mx-auto mb-3 h-12 w-12 text-silver-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
                       </svg>
@@ -421,6 +488,48 @@ export default function AdminActivePage() {
             </table>
           </div>
         </div>
+
+        {confirmRefund && confirmRefund.payment && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+            <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-2xl dark:bg-gray-800">
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+                Refund Payment?
+              </h2>
+              <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">
+                This will refund <span className="font-semibold">${(confirmRefund.payment.amountCents / 100).toFixed(2)}</span> to the customer&apos;s
+                card via Stripe and void the parking session for spot{" "}
+                <span className="font-mono font-bold">{confirmRefund.spot.label}</span> ({confirmRefund.vehicle.licensePlate}).
+                This cannot be undone from the dashboard.
+              </p>
+              <label className="mt-4 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                Reason (optional, for records)
+              </label>
+              <textarea
+                rows={2}
+                value={refundReason}
+                onChange={(e) => setRefundReason(e.target.value)}
+                placeholder="e.g. Customer left early, duplicate charge"
+                className="mt-1 w-full rounded-lg border border-silver-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-silver-600 dark:bg-gray-700 dark:text-white"
+              />
+              <div className="mt-5 flex justify-end gap-2">
+                <button
+                  onClick={() => { setConfirmRefund(null); setRefundReason(""); }}
+                  disabled={refundingId === confirmRefund.id}
+                  className="rounded-lg border border-silver-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-silver-50 dark:border-silver-600 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => performRefund(confirmRefund)}
+                  disabled={refundingId === confirmRefund.id}
+                  className="rounded-lg bg-red-600 px-4 py-2 text-sm font-bold text-white hover:bg-red-700 disabled:bg-silver-400"
+                >
+                  {refundingId === confirmRefund.id ? "Refunding..." : "Confirm Refund"}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </main>
     </div>
   );

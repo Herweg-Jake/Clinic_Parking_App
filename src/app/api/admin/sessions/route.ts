@@ -40,7 +40,19 @@ export async function GET(req: Request) {
     const rows = await prisma.session.findMany({
       where,
       orderBy: { startedAt: "desc" },
-      include: { vehicle: true, spot: true },
+      include: {
+        vehicle: true,
+        spot: true,
+        payment: {
+          select: {
+            id: true,
+            amountCents: true,
+            status: true,
+            paidAt: true,
+            stripeCheckoutSessionId: true,
+          },
+        },
+      },
     });
 
     return NextResponse.json(rows);
