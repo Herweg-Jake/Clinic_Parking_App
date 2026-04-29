@@ -122,12 +122,42 @@ model Ticket {
   spot        String    // spot label e.g. "A5"
   amountCents Int       // fine amount in cents
   notes       String?   // optional officer notes
-  issuedBy    String    // admin user email who issued it
+  issuedBy    String    // admin user email who issued it (auth identity)
+  citedBy     String?   // name of officer/staff who physically wrote the ticket
   issuedAt    DateTime  @default(now())
   paidAt      DateTime? // null until paid
 
   @@index([code])
   @@index([plate])
+}
+
+model Business {
+  id              String       @id @default(cuid())
+  name            String
+  code            String       @unique // validation code shared with the business
+  contactEmail    String?
+  contactPhone    String?
+  monthlyFeeCents Int          @default(0)
+  isActive        Boolean      @default(true)
+  createdAt       DateTime     @default(now())
+  validations     Validation[]
+
+  @@index([code])
+}
+
+model Validation {
+  id          String   @id @default(cuid())
+  business    Business @relation(fields: [businessId], references: [id])
+  businessId  String
+  plate       String?
+  spot        String?
+  sessionId   String?
+  hours       Int      @default(1)
+  validatedBy String? // admin email if performed via admin UI
+  createdAt   DateTime @default(now())
+
+  @@index([businessId, createdAt])
+  @@index([sessionId])
 }
 
 model TicketCounter {

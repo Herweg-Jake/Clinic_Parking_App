@@ -12,6 +12,7 @@ type Ticket = {
   amountCents: number;
   notes: string | null;
   issuedBy: string;
+  citedBy: string | null;
   issuedAt: string;
   paidAt: string | null;
 };
@@ -182,6 +183,12 @@ export default function PrintTicketPage() {
                   ${(ticket.amountCents / 100).toFixed(2)}
                 </span>
               </div>
+              {ticket.citedBy && (
+                <div className="flex justify-between border-b border-gray-200 pb-1">
+                  <span className="font-semibold text-gray-600">Cited By:</span>
+                  <span className="font-bold text-gray-900">{ticket.citedBy}</span>
+                </div>
+              )}
               {ticket.notes && (
                 <div className="border-b border-gray-200 pb-1">
                   <span className="font-semibold text-gray-600">Notes:</span>
