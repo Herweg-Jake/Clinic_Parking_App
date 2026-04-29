@@ -9,7 +9,7 @@ export async function POST(req: Request) {
     const { user } = await requireAdmin();
 
     const body = await req.json();
-    const { spot, plate, amountCents, notes } = body;
+    const { spot, plate, amountCents, notes, citedBy } = body;
 
     if (!spot || !plate || !amountCents) {
       return NextResponse.json(
@@ -36,6 +36,7 @@ export async function POST(req: Request) {
         amountCents,
         notes: notes?.trim() || null,
         issuedBy: user.email,
+        citedBy: typeof citedBy === "string" && citedBy.trim() ? citedBy.trim() : null,
       },
     });
 

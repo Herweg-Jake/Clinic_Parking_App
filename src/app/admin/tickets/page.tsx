@@ -11,6 +11,7 @@ type Ticket = {
   amountCents: number;
   notes: string | null;
   issuedBy: string;
+  citedBy: string | null;
   issuedAt: string;
   paidAt: string | null;
 };
@@ -180,6 +181,7 @@ export default function TicketsDashboardPage() {
                   <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white">Ticket #</th>
                   <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white">Plate</th>
                   <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white">Spot</th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white">Cited By</th>
                   <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white">Issued</th>
                   <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white">Amount</th>
                   <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white">Status</th>
@@ -192,6 +194,9 @@ export default function TicketsDashboardPage() {
                     <td className="px-6 py-4 font-mono font-bold text-gray-900 dark:text-white">{t.code}</td>
                     <td className="px-6 py-4 font-mono text-sm text-gray-900 dark:text-white">{t.plate}</td>
                     <td className="px-6 py-4 font-medium text-gray-900 dark:text-white">{t.spot}</td>
+                    <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">
+                      {t.citedBy || <span className="text-silver-400">—</span>}
+                    </td>
                     <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">
                       {new Date(t.issuedAt).toLocaleString()}
                     </td>
@@ -219,7 +224,7 @@ export default function TicketsDashboardPage() {
                 ))}
                 {tickets.length === 0 && !loading && !error && (
                   <tr>
-                    <td colSpan={7} className="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
+                    <td colSpan={8} className="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
                       <svg className="mx-auto mb-3 h-12 w-12 text-silver-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                       </svg>

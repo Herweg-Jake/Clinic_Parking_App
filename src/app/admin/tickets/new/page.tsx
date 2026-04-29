@@ -13,6 +13,7 @@ export default function NewTicketPage() {
   const [customAmount, setCustomAmount] = useState("");
   const [useCustom, setUseCustom] = useState(false);
   const [notes, setNotes] = useState("");
+  const [citedBy, setCitedBy] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -40,6 +41,7 @@ export default function NewTicketPage() {
           plate: plate.trim(),
           amountCents: finalAmount,
           notes: notes.trim() || undefined,
+          citedBy: citedBy.trim() || undefined,
         }),
       });
 
@@ -168,6 +170,21 @@ export default function NewTicketPage() {
                   </div>
                 )}
               </div>
+            </div>
+
+            {/* Cited By */}
+            <div className="mb-4">
+              <label className="mb-1 block text-sm font-semibold text-gray-900 dark:text-white">
+                Cited By (optional)
+              </label>
+              <input
+                type="text"
+                placeholder="Officer or staff name who wrote this ticket"
+                value={citedBy}
+                onChange={(e) => setCitedBy(e.target.value)}
+                maxLength={100}
+                className="w-full rounded-lg border border-silver-300 px-4 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-silver-600 dark:bg-gray-700 dark:text-white"
+              />
             </div>
 
             {/* Notes */}

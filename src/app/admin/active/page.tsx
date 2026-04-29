@@ -176,6 +176,12 @@ export default function AdminActivePage() {
               Manage Permits
             </Link>
             <Link
+              href="/admin/businesses"
+              className="rounded-lg border-2 border-silver-300 bg-white px-4 py-2 font-medium text-gray-700 transition-all hover:border-blue-500 dark:border-silver-600 dark:bg-gray-700 dark:text-gray-200"
+            >
+              Businesses
+            </Link>
+            <Link
               href="/"
               className="rounded-lg bg-blue-600 px-4 py-2 font-medium text-white transition-all hover:bg-blue-700"
             >

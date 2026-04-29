@@ -24,6 +24,7 @@ export async function GET(
         spot: ticket.spot,
         amountCents: ticket.amountCents,
         notes: ticket.notes,
+        citedBy: ticket.citedBy,
         issuedAt: ticket.issuedAt,
         paidAt: ticket.paidAt,
         isPaid: !!ticket.paidAt,
