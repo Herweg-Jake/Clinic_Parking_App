@@ -40,6 +40,15 @@ export default function AdminActivePage() {
   const [error, setError] = useState<string | null>(null);
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [showRevenue, setShowRevenue] = useState(false);
+  const [syncing, setSyncing] = useState(false);
+  const [syncReport, setSyncReport] = useState<{
+    scanned: number;
+    alreadyOk: number;
+    created: number;
+    skipped: number;
+    errors: { checkoutId: string; error: string }[];
+    createdSessions: { checkoutId: string; sessionId: string; plate: string; spotLabel: string }[];
+  } | null>(null);
 
   const loadRevenue = useCallback(async () => {
     try {
@@ -126,6 +135,30 @@ export default function AdminActivePage() {
   const [refundingId, setRefundingId] = useState<string | null>(null);
   const [confirmRefund, setConfirmRefund] = useState<Row | null>(null);
   const [refundReason, setRefundReason] = useState("");
+
+  async function syncStripe() {
+    setError(null);
+    setSyncing(true);
+    setSyncReport(null);
+    try {
+      const res = await fetch("/api/admin/reconcile-stripe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ days: 7 }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || `Sync failed (${res.status})`);
+        return;
+      }
+      setSyncReport(data);
+      await load();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Sync failed");
+    } finally {
+      setSyncing(false);
+    }
+  }
 
   async function performRefund(row: Row) {
     setError(null);
@@ -217,6 +250,14 @@ export default function AdminActivePage() {
             >
               Businesses
             </Link>
+            <button
+              onClick={syncStripe}
+              disabled={syncing}
+              title="Pull recent paid Stripe checkouts and create any missing sessions"
+              className="rounded-lg border-2 border-purple-300 bg-white px-4 py-2 font-medium text-purple-700 transition-all hover:border-purple-500 dark:border-purple-700 dark:bg-gray-700 dark:text-purple-300 disabled:opacity-50"
+            >
+              {syncing ? "Syncing..." : "Sync Stripe"}
+            </button>
             <Link
               href="/"
               className="rounded-lg bg-blue-600 px-4 py-2 font-medium text-white transition-all hover:bg-blue-700"
@@ -488,6 +529,80 @@ export default function AdminActivePage() {
             </table>
           </div>
         </div>
+
+        {syncReport && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+            <div className="w-full max-w-lg rounded-xl bg-white p-6 shadow-2xl dark:bg-gray-800">
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+                Stripe Sync Report
+              </h2>
+              <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">
+                Scanned the last 7 days of Stripe checkouts.
+              </p>
+              <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+                <div className="rounded-lg bg-silver-50 p-3 dark:bg-gray-700">
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Scanned</p>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-white">{syncReport.scanned}</p>
+                </div>
+                <div className="rounded-lg bg-green-50 p-3 dark:bg-green-900/30">
+                  <p className="text-xs text-green-700 dark:text-green-300">Created</p>
+                  <p className="text-2xl font-bold text-green-700 dark:text-green-300">{syncReport.created}</p>
+                </div>
+                <div className="rounded-lg bg-blue-50 p-3 dark:bg-blue-900/30">
+                  <p className="text-xs text-blue-700 dark:text-blue-300">Already OK</p>
+                  <p className="text-2xl font-bold text-blue-700 dark:text-blue-300">{syncReport.alreadyOk}</p>
+                </div>
+                <div className="rounded-lg bg-silver-50 p-3 dark:bg-gray-700">
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Skipped</p>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-white">{syncReport.skipped}</p>
+                </div>
+              </div>
+              {syncReport.createdSessions.length > 0 && (
+                <div className="mt-4">
+                  <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                    Recovered sessions:
+                  </p>
+                  <ul className="mt-2 max-h-40 overflow-y-auto rounded-lg border border-silver-200 bg-silver-50 p-3 text-sm dark:border-silver-700 dark:bg-gray-900">
+                    {syncReport.createdSessions.map((s) => (
+                      <li key={s.checkoutId} className="font-mono text-xs text-gray-700 dark:text-gray-300">
+                        {s.spotLabel} · {s.plate}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {syncReport.errors.length > 0 && (
+                <div className="mt-4">
+                  <p className="text-sm font-semibold text-red-700 dark:text-red-400">
+                    Errors ({syncReport.errors.length}):
+                  </p>
+                  <ul className="mt-2 max-h-40 overflow-y-auto rounded-lg border border-red-200 bg-red-50 p-3 text-xs dark:border-red-800 dark:bg-red-900/20">
+                    {syncReport.errors.map((e) => (
+                      <li key={e.checkoutId} className="text-red-700 dark:text-red-300">
+                        {e.checkoutId}: {e.error}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {syncReport.scanned === 0 && (
+                <p className="mt-4 rounded-lg bg-amber-50 p-3 text-sm text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">
+                  No Stripe checkouts found in the last 7 days. If you expect activity here,
+                  verify <code className="font-mono">STRIPE_SECRET_KEY</code> matches the
+                  account customers are paying into.
+                </p>
+              )}
+              <div className="mt-5 flex justify-end">
+                <button
+                  onClick={() => setSyncReport(null)}
+                  className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {confirmRefund && confirmRefund.payment && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
