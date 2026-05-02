@@ -38,8 +38,8 @@ CREATE INDEX "Validation_sessionId_idx" ON "Validation"("sessionId");
 -- AddForeignKey
 ALTER TABLE "Validation" ADD CONSTRAINT "Validation_businessId_fkey" FOREIGN KEY ("businessId") REFERENCES "Business"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
--- Cleanup: remove any spot labeled "A0" so spots are consistently A1-A20.
--- Only delete if no sessions reference it (RESTRICT will fail otherwise, which is intentional).
-DELETE FROM "Spot" WHERE "label" = 'A0' AND NOT EXISTS (
-    SELECT 1 FROM "Session" WHERE "Session"."spotId" = "Spot"."id"
-);
+-- Ensure spot A0 exists (21 total spots: A0-A20). Cuid generated inline so this
+-- migration is self-contained.
+INSERT INTO "Spot" ("id", "label", "isActive")
+VALUES ('seed_spot_a0', 'A0', true)
+ON CONFLICT ("label") DO NOTHING;
