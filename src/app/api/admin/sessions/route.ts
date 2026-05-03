@@ -23,8 +23,10 @@ export async function GET(req: Request) {
     const whereBase =
       statusParam === "expired"
         ? {
-            status: { in: activeStatuses },
-            expiresAt: { lt: now },
+            OR: [
+              { status: SessionStatus.expired },
+              { status: { in: activeStatuses }, expiresAt: { lt: now } },
+            ],
           }
         : {
             status: { in: activeStatuses },
