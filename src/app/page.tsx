@@ -44,7 +44,7 @@ export default function Home() {
                 isDark ? "text-gray-300" : "text-gray-600"
               }`}
             >
-              Scan the QR code at your parking spot or enter your spot number to get started.
+              Enter your space number to get started.
             </p>
 
             {/* CTA Buttons */}
@@ -70,6 +70,18 @@ export default function Home() {
                 Check Status
               </Link>
             </div>
+
+            {/* Disclaimer */}
+            <p
+              className={`mt-8 text-xs leading-relaxed ${
+                isDark ? "text-gray-400" : "text-gray-500"
+              }`}
+            >
+              Pay to Park option only available during posted hours. Any unauthorized
+              parking during NPT open hours will be automatically ticketed. Any
+              vehicles with outstanding fines are subject to automatic towing. For
+              disputes, contact parkingservices@nevpt.com
+            </p>
           </div>
 
           <HelpFooter />

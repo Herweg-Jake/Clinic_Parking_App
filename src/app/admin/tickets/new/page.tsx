@@ -1,9 +1,21 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
 const FINE_PRESETS = [2500, 5000, 7500, 10000]; // cents
+
+const REASON_OPTIONS = [
+  { value: "failure_to_pay", label: "Failure to Pay" },
+  { value: "unauthorized_business_hours", label: "Unauthorized Parking During Business Hours" },
+];
+
+type Officer = {
+  id: string;
+  name: string;
+  badgeNumber: string;
+  isActive: boolean;
+};
 
 export default function NewTicketPage() {
   const router = useRouter();
@@ -13,9 +25,26 @@ export default function NewTicketPage() {
   const [customAmount, setCustomAmount] = useState("");
   const [useCustom, setUseCustom] = useState(false);
   const [notes, setNotes] = useState("");
-  const [citedBy, setCitedBy] = useState("");
+  const [officerId, setOfficerId] = useState("");
+  const [reason, setReason] = useState("");
+  const [officers, setOfficers] = useState<Officer[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    async function loadOfficers() {
+      try {
+        const res = await fetch("/api/admin/officers?active=true", { cache: "no-store" });
+        if (res.ok) {
+          const data = await res.json();
+          setOfficers(data.officers);
+        }
+      } catch {
+        // non-fatal; officer dropdown will be empty
+      }
+    }
+    void loadOfficers();
+  }, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -41,7 +70,8 @@ export default function NewTicketPage() {
           plate: plate.trim(),
           amountCents: finalAmount,
           notes: notes.trim() || undefined,
-          citedBy: citedBy.trim() || undefined,
+          officerId: officerId || undefined,
+          reason: reason || undefined,
         }),
       });
 
@@ -91,16 +121,19 @@ export default function NewTicketPage() {
             {/* Spot */}
             <div className="mb-4">
               <label className="mb-1 block text-sm font-semibold text-gray-900 dark:text-white">
-                Spot Label
+                Spot Number
               </label>
-              <input
-                type="text"
+              <select
                 required
-                placeholder="e.g. A5"
                 value={spot}
-                onChange={(e) => setSpot(e.target.value.toUpperCase())}
-                className="w-full rounded-lg border border-silver-300 px-4 py-2 uppercase focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-silver-600 dark:bg-gray-700 dark:text-white"
-              />
+                onChange={(e) => setSpot(e.target.value)}
+                className="w-full rounded-lg border border-silver-300 px-4 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-silver-600 dark:bg-gray-700 dark:text-white"
+              >
+                <option value="">Select spot</option>
+                {Array.from({ length: 20 }, (_, i) => i + 1).map((n) => (
+                  <option key={n} value={`A${n}`}>{n}</option>
+                ))}
+              </select>
             </div>
 
             {/* Plate */}
@@ -116,6 +149,23 @@ export default function NewTicketPage() {
                 onChange={(e) => setPlate(e.target.value.toUpperCase())}
                 className="w-full rounded-lg border border-silver-300 px-4 py-2 uppercase focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-silver-600 dark:bg-gray-700 dark:text-white"
               />
+            </div>
+
+            {/* Reason */}
+            <div className="mb-4">
+              <label className="mb-1 block text-sm font-semibold text-gray-900 dark:text-white">
+                Reason for Ticket
+              </label>
+              <select
+                value={reason}
+                onChange={(e) => setReason(e.target.value)}
+                className="w-full rounded-lg border border-silver-300 px-4 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-silver-600 dark:bg-gray-700 dark:text-white"
+              >
+                <option value="">Select reason</option>
+                {REASON_OPTIONS.map((r) => (
+                  <option key={r.value} value={r.value}>{r.label}</option>
+                ))}
+              </select>
             </div>
 
             {/* Fine Amount */}
@@ -177,14 +227,24 @@ export default function NewTicketPage() {
               <label className="mb-1 block text-sm font-semibold text-gray-900 dark:text-white">
                 Cited By (optional)
               </label>
-              <input
-                type="text"
-                placeholder="Officer or staff name who wrote this ticket"
-                value={citedBy}
-                onChange={(e) => setCitedBy(e.target.value)}
-                maxLength={100}
+              <select
+                value={officerId}
+                onChange={(e) => setOfficerId(e.target.value)}
                 className="w-full rounded-lg border border-silver-300 px-4 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-silver-600 dark:bg-gray-700 dark:text-white"
-              />
+              >
+                <option value="">— None —</option>
+                {officers.map((o) => (
+                  <option key={o.id} value={o.id}>
+                    {o.name} (Badge #{o.badgeNumber})
+                  </option>
+                ))}
+              </select>
+              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                Only the badge number will print on the ticket.{" "}
+                <Link href="/admin/officers" className="text-blue-600 hover:underline">
+                  Manage officers
+                </Link>
+              </p>
             </div>
 
             {/* Notes */}

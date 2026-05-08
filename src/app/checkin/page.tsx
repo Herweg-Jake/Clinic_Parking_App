@@ -4,6 +4,7 @@ import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { ThemedPage, useThemedClasses } from "../components/ThemedPage";
 import { HelpFooter } from "../components/HelpFooter";
+import { displaySpot } from "@/lib/spot";
 
 type PricingInfo = {
   rateCents: number;
@@ -141,14 +142,14 @@ function CheckinForm() {
                   <div className={`flex items-center justify-between rounded-lg border-2 p-4 ${theme.success}`}>
                     <div className="flex items-center">
                       <svg className="mr-3 h-8 w-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-                      <span className={`text-2xl font-bold ${theme.textPrimary}`}>Spot {spotLabel}</span>
+                      <span className={`text-2xl font-bold ${theme.textPrimary}`}>Spot {displaySpot(spotLabel)}</span>
                     </div>
                     <button type="button" onClick={() => setSpotLabel("")} className={theme.link}>Change</button>
                   </div>
                 ) : (
                   <select value="" onChange={(e) => setSpotLabel(e.target.value)} className={`block w-full rounded-lg border px-4 py-3 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 ${theme.inputBg} ${theme.inputBorder} ${theme.inputText}`}>
                     <option value="">Select your parking spot</option>
-                    {Array.from({ length: 21 }, (_, i) => `A${i}`).map(s => <option key={s} value={s}>Spot {s}</option>)}
+                    {Array.from({ length: 20 }, (_, i) => i + 1).map(n => <option key={n} value={`A${n}`}>Spot {n}</option>)}
                   </select>
                 )}
               </div>

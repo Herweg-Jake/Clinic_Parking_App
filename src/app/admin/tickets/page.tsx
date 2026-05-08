@@ -2,6 +2,7 @@
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { displaySpot } from "@/lib/spot";
 
 type Ticket = {
   id: string;
@@ -12,6 +13,8 @@ type Ticket = {
   notes: string | null;
   issuedBy: string;
   citedBy: string | null;
+  citedByBadge: string | null;
+  reason: string | null;
   issuedAt: string;
   paidAt: string | null;
 };
@@ -100,6 +103,12 @@ export default function TicketsDashboardPage() {
               className="rounded-lg bg-red-600 px-6 py-2 font-medium text-white transition-all hover:bg-red-700"
             >
               Issue New Ticket
+            </Link>
+            <Link
+              href="/admin/officers"
+              className="rounded-lg border-2 border-silver-300 bg-white px-4 py-2 font-medium text-gray-700 transition-all hover:border-blue-500 dark:border-silver-600 dark:bg-gray-700 dark:text-gray-200"
+            >
+              Officers
             </Link>
             <Link
               href="/admin/active"
@@ -193,9 +202,13 @@ export default function TicketsDashboardPage() {
                   <tr key={t.id} className="hover:bg-silver-50 dark:hover:bg-gray-700/50 transition-colors">
                     <td className="px-6 py-4 font-mono font-bold text-gray-900 dark:text-white">{t.code}</td>
                     <td className="px-6 py-4 font-mono text-sm text-gray-900 dark:text-white">{t.plate}</td>
-                    <td className="px-6 py-4 font-medium text-gray-900 dark:text-white">{t.spot}</td>
+                    <td className="px-6 py-4 font-medium text-gray-900 dark:text-white">{displaySpot(t.spot)}</td>
                     <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">
-                      {t.citedBy || <span className="text-silver-400">—</span>}
+                      {t.citedByBadge
+                        ? `Badge #${t.citedByBadge}`
+                        : t.citedBy
+                          ? t.citedBy
+                          : <span className="text-silver-400">—</span>}
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">
                       {new Date(t.issuedAt).toLocaleString()}

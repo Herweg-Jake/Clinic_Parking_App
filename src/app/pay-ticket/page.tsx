@@ -4,6 +4,7 @@ import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { ThemedPage, useThemedClasses } from "../components/ThemedPage";
 import { HelpFooter } from "../components/HelpFooter";
+import { displaySpot } from "@/lib/spot";
 
 type TicketData = {
   id: string;
@@ -164,7 +165,7 @@ function PayTicketContent() {
             <div className="space-y-3">
               <div className="flex justify-between">
                 <span className={`font-semibold ${textSecondary}`}>Spot:</span>
-                <span className={`font-bold ${textPrimary}`}>{ticket.spot}</span>
+                <span className={`font-bold ${textPrimary}`}>{displaySpot(ticket.spot)}</span>
               </div>
               <div className="flex justify-between">
                 <span className={`font-semibold ${textSecondary}`}>License Plate:</span>
