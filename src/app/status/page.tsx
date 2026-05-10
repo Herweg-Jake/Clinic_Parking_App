@@ -4,6 +4,7 @@ import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { ThemedPage, useThemedClasses } from "../components/ThemedPage";
 import { HelpFooter } from "../components/HelpFooter";
+import { displaySpot } from "@/lib/spot";
 
 type SessionInfo = {
   id: string;
@@ -219,7 +220,7 @@ function StatusContent() {
                 <div className="flex items-center justify-between mb-3">
                   <span className={`text-sm ${textMuted}`}>Spot</span>
                   <span className={`text-xl font-bold ${textPrimary}`}>
-                    {session.spotLabel}
+                    {displaySpot(session.spotLabel)}
                   </span>
                 </div>
                 <div className="flex items-center justify-between mb-3">

@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import QRCode from "qrcode";
+import { displaySpot } from "@/lib/spot";
 
 type Ticket = {
   id: string;
@@ -13,8 +14,15 @@ type Ticket = {
   notes: string | null;
   issuedBy: string;
   citedBy: string | null;
+  citedByBadge: string | null;
+  reason: string | null;
   issuedAt: string;
   paidAt: string | null;
+};
+
+const REASON_LABELS: Record<string, string> = {
+  failure_to_pay: "Failure to Pay",
+  unauthorized_business_hours: "Unauthorized Parking During Business Hours",
 };
 
 export default function PrintTicketPage() {
@@ -171,19 +179,33 @@ export default function PrintTicketPage() {
               </div>
               <div className="flex justify-between border-b border-gray-200 pb-1">
                 <span className="font-semibold text-gray-600">Spot:</span>
-                <span className="font-bold text-gray-900">{ticket.spot}</span>
+                <span className="font-bold text-gray-900">{displaySpot(ticket.spot)}</span>
               </div>
               <div className="flex justify-between border-b border-gray-200 pb-1">
                 <span className="font-semibold text-gray-600">License Plate:</span>
                 <span className="font-mono font-bold text-gray-900">{ticket.plate}</span>
               </div>
+              {ticket.reason && REASON_LABELS[ticket.reason] && (
+                <div className="flex justify-between border-b border-gray-200 pb-1">
+                  <span className="font-semibold text-gray-600">Reason:</span>
+                  <span className="text-right font-bold text-gray-900">
+                    {REASON_LABELS[ticket.reason]}
+                  </span>
+                </div>
+              )}
               <div className="flex justify-between border-b border-gray-200 pb-1">
                 <span className="font-semibold text-gray-600">Fine Amount:</span>
                 <span className="text-xl font-black text-red-600">
                   ${(ticket.amountCents / 100).toFixed(2)}
                 </span>
               </div>
-              {ticket.citedBy && (
+              {ticket.citedByBadge && (
+                <div className="flex justify-between border-b border-gray-200 pb-1">
+                  <span className="font-semibold text-gray-600">Cited By:</span>
+                  <span className="font-bold text-gray-900">Badge #{ticket.citedByBadge}</span>
+                </div>
+              )}
+              {!ticket.citedByBadge && ticket.citedBy && (
                 <div className="flex justify-between border-b border-gray-200 pb-1">
                   <span className="font-semibold text-gray-600">Cited By:</span>
                   <span className="font-bold text-gray-900">{ticket.citedBy}</span>
@@ -216,7 +238,11 @@ export default function PrintTicketPage() {
 
             {/* Footer */}
             <div className="mt-4 border-t-2 border-red-600 pt-3 text-center text-xs text-gray-500">
-              <p>Pay online within 30 days to avoid additional penalties.</p>
+              <p>
+                Failure to pay within 30 days will result in additional $50 late fee charge.
+                Vehicles with outstanding fines will be subject to automatic tow for repeat
+                violations. For disputes, you can contact parkingservices@nevpt.com.
+              </p>
               <p className="mt-1">nvptparking.com</p>
             </div>
           </div>

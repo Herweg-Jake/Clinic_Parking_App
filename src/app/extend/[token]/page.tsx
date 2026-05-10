@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { HelpFooter } from "../../components/HelpFooter";
+import { displaySpot } from "@/lib/spot";
 
 type SessionInfo = {
   id: string;
@@ -140,7 +141,7 @@ export default function ExtendPage() {
             <div className="flex items-center justify-between mb-3">
               <span className="text-sm text-gray-500 dark:text-gray-400">Spot</span>
               <span className="text-xl font-bold text-gray-900 dark:text-white">
-                {session?.spotLabel}
+                {displaySpot(session?.spotLabel)}
               </span>
             </div>
             <div className="flex items-center justify-between mb-3">

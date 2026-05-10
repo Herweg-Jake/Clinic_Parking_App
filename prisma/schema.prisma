@@ -123,12 +123,24 @@ model Ticket {
   amountCents Int       // fine amount in cents
   notes       String?   // optional officer notes
   issuedBy    String    // admin user email who issued it (auth identity)
-  citedBy     String?   // name of officer/staff who physically wrote the ticket
+  citedBy     String?   // legacy: free-text staff name (kept for historical tickets)
+  citedByBadge String?  // badge number snapshot (what's printed on the ticket)
+  reason      String?   // "failure_to_pay" | "unauthorized_business_hours"
   issuedAt    DateTime  @default(now())
   paidAt      DateTime? // null until paid
 
   @@index([code])
   @@index([plate])
+}
+
+model Officer {
+  id           String   @id @default(cuid())
+  name         String   // internal-only name shown to admins in dropdowns
+  badgeNumber  String   @unique // e.g. "034" - this is what prints on tickets
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+
+  @@index([badgeNumber])
 }
 
 model Business {

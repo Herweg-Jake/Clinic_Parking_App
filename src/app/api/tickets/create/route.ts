@@ -9,7 +9,7 @@ export async function POST(req: Request) {
     const { user } = await requireAdmin();
 
     const body = await req.json();
-    const { spot, plate, amountCents, notes, citedBy } = body;
+    const { spot, plate, amountCents, notes, officerId, reason } = body;
 
     if (!spot || !plate || !amountCents) {
       return NextResponse.json(
@@ -25,6 +25,18 @@ export async function POST(req: Request) {
       );
     }
 
+    const VALID_REASONS = ["failure_to_pay", "unauthorized_business_hours"];
+    const normalizedReason = typeof reason === "string" && VALID_REASONS.includes(reason) ? reason : null;
+
+    let citedByBadge: string | null = null;
+    if (typeof officerId === "string" && officerId.trim()) {
+      const officer = await prisma.officer.findUnique({ where: { id: officerId } });
+      if (!officer) {
+        return NextResponse.json({ error: "Selected officer not found" }, { status: 400 });
+      }
+      citedByBadge = officer.badgeNumber;
+    }
+
     const normalizedPlate = normalizePlate(plate);
     const code = await nextTicketCode();
 
@@ -36,7 +48,8 @@ export async function POST(req: Request) {
         amountCents,
         notes: notes?.trim() || null,
         issuedBy: user.email,
-        citedBy: typeof citedBy === "string" && citedBy.trim() ? citedBy.trim() : null,
+        citedByBadge,
+        reason: normalizedReason,
       },
     });
 
