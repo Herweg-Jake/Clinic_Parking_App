@@ -149,7 +149,7 @@ function CheckinForm() {
                 ) : (
                   <select value="" onChange={(e) => setSpotLabel(e.target.value)} className={`block w-full rounded-lg border px-4 py-3 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 ${theme.inputBg} ${theme.inputBorder} ${theme.inputText}`}>
                     <option value="">Select your parking spot</option>
-                    {Array.from({ length: 20 }, (_, i) => i + 1).map(n => <option key={n} value={`A${n}`}>Spot {n}</option>)}
+                    {Array.from({ length: 21 }, (_, i) => i).map(n => <option key={n} value={`A${n}`}>Spot {n}</option>)}
                   </select>
                 )}
               </div>

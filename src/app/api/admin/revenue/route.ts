@@ -4,49 +4,61 @@ import { requireAdmin } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
+type Bucket = { total: number; today: number; month: number; transactions: number };
+
+function summarize(records: { amountCents: number; paidAt: Date | null }[]): Bucket {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+
+  let total = 0;
+  let todaySum = 0;
+  let monthSum = 0;
+  for (const r of records) {
+    total += r.amountCents;
+    if (r.paidAt) {
+      const d = new Date(r.paidAt);
+      if (d >= today) todaySum += r.amountCents;
+      if (d >= startOfMonth) monthSum += r.amountCents;
+    }
+  }
+  return {
+    total: total / 100,
+    today: todaySum / 100,
+    month: monthSum / 100,
+    transactions: records.length,
+  };
+}
+
 /**
  * GET /api/admin/revenue
- * Returns revenue statistics including total revenue, today's revenue, and payment count.
+ * Returns parking, ticket, and combined revenue stats.
  */
 export async function GET() {
   try {
     await requireAdmin();
 
-    // Get all paid payments
-    const paidPayments = await prisma.payment.findMany({
-      where: {
-        status: "paid",
-      },
-      select: {
-        amountCents: true,
-        paidAt: true,
-      },
-    });
+    const [paidPayments, paidTickets] = await Promise.all([
+      prisma.payment.findMany({
+        where: { status: "paid" },
+        select: { amountCents: true, paidAt: true },
+      }),
+      prisma.ticket.findMany({
+        where: { paidAt: { not: null } },
+        select: { amountCents: true, paidAt: true },
+      }),
+    ]);
 
-    type PaymentRecord = { amountCents: number; paidAt: Date | null };
+    const parking = summarize(paidPayments);
+    const tickets = summarize(paidTickets);
+    const combined: Bucket = {
+      total: parking.total + tickets.total,
+      today: parking.today + tickets.today,
+      month: parking.month + tickets.month,
+      transactions: parking.transactions + tickets.transactions,
+    };
 
-    // Calculate total revenue
-    const totalRevenue = paidPayments.reduce((sum: number, payment: PaymentRecord) => sum + payment.amountCents, 0);
-
-    // Calculate today's revenue
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const todayRevenue = paidPayments
-      .filter((p: PaymentRecord) => p.paidAt && new Date(p.paidAt) >= today)
-      .reduce((sum: number, payment: PaymentRecord) => sum + payment.amountCents, 0);
-
-    // Calculate this month's revenue
-    const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-    const monthRevenue = paidPayments
-      .filter((p: PaymentRecord) => p.paidAt && new Date(p.paidAt) >= startOfMonth)
-      .reduce((sum: number, payment: PaymentRecord) => sum + payment.amountCents, 0);
-
-    return NextResponse.json({
-      totalRevenue: totalRevenue / 100, // Convert to dollars
-      todayRevenue: todayRevenue / 100,
-      monthRevenue: monthRevenue / 100,
-      totalTransactions: paidPayments.length,
-    });
+    return NextResponse.json({ parking, tickets, combined });
   } catch (e: any) {
     const msg = e?.message || "Unauthorized";
     const code = msg === "forbidden" || msg === "unauthorized" ? 401 : 500;

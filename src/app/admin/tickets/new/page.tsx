@@ -130,9 +130,10 @@ export default function NewTicketPage() {
                 className="w-full rounded-lg border border-silver-300 px-4 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-silver-600 dark:bg-gray-700 dark:text-white"
               >
                 <option value="">Select spot</option>
-                {Array.from({ length: 20 }, (_, i) => i + 1).map((n) => (
+                {Array.from({ length: 21 }, (_, i) => i).map((n) => (
                   <option key={n} value={`A${n}`}>{n}</option>
                 ))}
+                <option value="N/A">N/A</option>
               </select>
             </div>
 
