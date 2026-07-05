@@ -17,12 +17,14 @@ type Ticket = {
   reason: string | null;
   issuedAt: string;
   paidAt: string | null;
+  flagged?: boolean;
 };
 
 type Stats = {
   totalIssued: number;
   totalUnpaid: number;
   totalCollectedCents: number;
+  towCandidates: number;
 };
 
 export default function TicketsDashboardPage() {
@@ -127,7 +129,7 @@ export default function TicketsDashboardPage() {
 
         {/* Stats */}
         {stats && (
-          <div className="mb-6 grid gap-4 sm:grid-cols-3">
+          <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <div className="rounded-xl bg-white p-6 shadow-lg dark:bg-gray-800 border-l-4 border-blue-600">
               <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Issued</p>
               <p className="mt-2 text-3xl font-bold text-gray-900 dark:text-white">{stats.totalIssued}</p>
@@ -135,6 +137,11 @@ export default function TicketsDashboardPage() {
             <div className="rounded-xl bg-white p-6 shadow-lg dark:bg-gray-800 border-l-4 border-red-600">
               <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Unpaid</p>
               <p className="mt-2 text-3xl font-bold text-gray-900 dark:text-white">{stats.totalUnpaid}</p>
+            </div>
+            <div className="rounded-xl bg-white p-6 shadow-lg dark:bg-gray-800 border-l-4 border-amber-500">
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Tow Candidates</p>
+              <p className="mt-2 text-3xl font-bold text-gray-900 dark:text-white">{stats.towCandidates}</p>
+              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Repeat plates with unpaid tickets</p>
             </div>
             <div className="rounded-xl bg-white p-6 shadow-lg dark:bg-gray-800 border-l-4 border-green-600">
               <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Collected</p>
@@ -201,7 +208,19 @@ export default function TicketsDashboardPage() {
                 {tickets.map((t) => (
                   <tr key={t.id} className="hover:bg-silver-50 dark:hover:bg-gray-700/50 transition-colors">
                     <td className="px-6 py-4 font-mono font-bold text-gray-900 dark:text-white">{t.code}</td>
-                    <td className="px-6 py-4 font-mono text-sm text-gray-900 dark:text-white">{t.plate}</td>
+                    <td className="px-6 py-4 font-mono text-sm text-gray-900 dark:text-white">
+                      <div className="flex items-center gap-2">
+                        <span>{t.plate}</span>
+                        {t.flagged && (
+                          <span
+                            title="Repeat offender with an unpaid ticket — tow candidate"
+                            className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800 dark:bg-amber-900 dark:text-amber-300"
+                          >
+                            🚩 Tow
+                          </span>
+                        )}
+                      </div>
+                    </td>
                     <td className="px-6 py-4 font-medium text-gray-900 dark:text-white">{displaySpot(t.spot)}</td>
                     <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">
                       {t.citedByBadge
