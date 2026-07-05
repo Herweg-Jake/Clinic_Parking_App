@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { normalizePlate } from "@/lib/plates";
 
 const FINE_PRESETS = [2500, 5000, 7500, 10000]; // cents
 
@@ -58,11 +59,15 @@ export default function NewTicketPage() {
   // warned to tow rather than re-ticket a vehicle with an unpaid ticket on file.
   useEffect(() => {
     const trimmed = plate.trim();
+    // Clear any prior result immediately so a stale warning is never shown for a
+    // plate the user has since edited (or after a failed/pending lookup).
+    setPlateStatus(null);
+
     if (trimmed.length < 2) {
-      setPlateStatus(null);
       return;
     }
 
+    const normalized = normalizePlate(trimmed);
     const controller = new AbortController();
     const timer = setTimeout(async () => {
       try {
@@ -70,8 +75,10 @@ export default function NewTicketPage() {
           `/api/tickets/check-plate?plate=${encodeURIComponent(trimmed)}`,
           { cache: "no-store", signal: controller.signal }
         );
-        if (res.ok) {
-          const data: PlateStatus = await res.json();
+        if (!res.ok) return;
+        const data: PlateStatus = await res.json();
+        // Only apply results that still match the current (normalized) plate.
+        if (data.plate === normalized) {
           setPlateStatus(data);
         }
       } catch {
