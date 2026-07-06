@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { normalizePlate } from "@/lib/plates";
 
 const FINE_PRESETS = [2500, 5000, 7500, 10000]; // cents
 
@@ -17,6 +18,13 @@ type Officer = {
   isActive: boolean;
 };
 
+type PlateStatus = {
+  plate: string;
+  priorTicketCount: number;
+  priorUnpaidCount: number;
+  shouldTow: boolean;
+};
+
 export default function NewTicketPage() {
   const router = useRouter();
   const [spot, setSpot] = useState("");
@@ -30,6 +38,7 @@ export default function NewTicketPage() {
   const [officers, setOfficers] = useState<Officer[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [plateStatus, setPlateStatus] = useState<PlateStatus | null>(null);
 
   useEffect(() => {
     async function loadOfficers() {
@@ -45,6 +54,43 @@ export default function NewTicketPage() {
     }
     void loadOfficers();
   }, []);
+
+  // Look up prior ticket history for the entered plate (debounced) so staff are
+  // warned to tow rather than re-ticket a vehicle with an unpaid ticket on file.
+  useEffect(() => {
+    const trimmed = plate.trim();
+    // Clear any prior result immediately so a stale warning is never shown for a
+    // plate the user has since edited (or after a failed/pending lookup).
+    setPlateStatus(null);
+
+    if (trimmed.length < 2) {
+      return;
+    }
+
+    const normalized = normalizePlate(trimmed);
+    const controller = new AbortController();
+    const timer = setTimeout(async () => {
+      try {
+        const res = await fetch(
+          `/api/tickets/check-plate?plate=${encodeURIComponent(trimmed)}`,
+          { cache: "no-store", signal: controller.signal }
+        );
+        if (!res.ok) return;
+        const data: PlateStatus = await res.json();
+        // Only apply results that still match the current (normalized) plate.
+        if (data.plate === normalized) {
+          setPlateStatus(data);
+        }
+      } catch {
+        // non-fatal; the warning is advisory only
+      }
+    }, 400);
+
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
+  }, [plate]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -150,6 +196,35 @@ export default function NewTicketPage() {
                 onChange={(e) => setPlate(e.target.value.toUpperCase())}
                 className="w-full rounded-lg border border-silver-300 px-4 py-2 uppercase focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-silver-600 dark:bg-gray-700 dark:text-white"
               />
+
+              {/* Repeat-offender / tow warning */}
+              {plateStatus?.shouldTow && (
+                <div className="mt-3 rounded-lg border-2 border-red-500 bg-red-50 p-3 dark:border-red-600 dark:bg-red-900/30">
+                  <div className="flex items-start gap-2">
+                    <svg className="mt-0.5 h-5 w-5 flex-shrink-0 text-red-600 dark:text-red-400" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                    </svg>
+                    <div>
+                      <p className="text-sm font-bold text-red-800 dark:text-red-300">
+                        🚩 Tow Alert — repeat offender
+                      </p>
+                      <p className="mt-0.5 text-sm text-red-700 dark:text-red-300">
+                        This vehicle has {plateStatus.priorUnpaidCount} unpaid ticket
+                        {plateStatus.priorUnpaidCount === 1 ? "" : "s"} on file
+                        {plateStatus.priorTicketCount > plateStatus.priorUnpaidCount &&
+                          ` (${plateStatus.priorTicketCount} tickets total)`}
+                        . Consider towing instead of issuing another ticket.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+              {plateStatus && !plateStatus.shouldTow && plateStatus.priorTicketCount > 0 && (
+                <p className="mt-2 text-xs text-amber-600 dark:text-amber-400">
+                  This vehicle has {plateStatus.priorTicketCount} prior ticket
+                  {plateStatus.priorTicketCount === 1 ? "" : "s"} (all paid).
+                </p>
+              )}
             </div>
 
             {/* Reason */}

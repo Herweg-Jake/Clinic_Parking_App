@@ -9,6 +9,10 @@ import { triggerNotificationCheck } from "@/lib/notifications";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || ""); // use account default API version
 
+// PT patients who check in with the free code are approved for this long.
+// After it expires, an admin can extend the session from the admin dashboard.
+const PT_CODE_APPROVAL_MINUTES = 60;
+
 export async function POST(req: Request) {
   // Trigger notification check in background (on-demand for Hobby plan)
   triggerNotificationCheck();
@@ -79,8 +83,11 @@ export async function POST(req: Request) {
         );
       }
 
-      // PT patients get NO expiration - they stay until spot is taken by new user
-      // Close prior sessions and create new session with no expiry
+      // PT patients are approved for 1 hour. Past that, an admin can extend
+      // the session from the admin dashboard.
+      const ptExpiresAt = new Date(Date.now() + PT_CODE_APPROVAL_MINUTES * 60 * 1000);
+
+      // Close prior sessions and create new session with a 1-hour expiry
       const [, , newSession] = await Promise.all([
         closeVehicleSessions,
         closeSpotSessions,
@@ -90,7 +97,7 @@ export async function POST(req: Request) {
             spotId: spot.id,
             status: SessionStatus.approved_pt,
             source: "nevada_pt_code",
-            expiresAt: null, // No expiration for PT patients
+            expiresAt: ptExpiresAt, // Approved for 1 hour; admin can extend
             phoneNumber: null, // PT patients don't get SMS notifications
           },
         }),
@@ -103,10 +110,11 @@ export async function POST(req: Request) {
         spotLabel,
         plate: normalized,
         status: newSession.status,
+        expiresAt: ptExpiresAt.toISOString(),
       });
 
       return NextResponse.json({
-        message: `Welcome! Your parking is approved. No time limit - just check in again if you return later.`,
+        message: `Welcome! Your parking is approved for 1 hour. If you need more time, please check with the front desk.`,
       });
     }
 
