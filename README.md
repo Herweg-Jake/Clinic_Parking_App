@@ -142,6 +142,11 @@ This app uses PostgreSQL with Prisma ORM.
 - `npm run db:seed` - Seed database with initial data
 - `npm run test:integrations` - Run integration checks for DB, Stripe, and Twilio
 
+Integration suite notes:
+- Set `STRICT_INTEGRATION_ENV=1` to fail on missing required env vars
+- Set `STRICT_INTEGRATION_EXTERNAL=1` to fail hard when external services are unreachable (network/egress checks)
+- Set `APP_BASE_URL` to run optional live API endpoint checks (e.g. `http://localhost:3000`)
+
 ## Usage
 
 ### For Patients/Visitors
